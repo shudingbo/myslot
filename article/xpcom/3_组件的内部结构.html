@@ -2,7 +2,7 @@
 title: 3_组件的内部结构
 description: 组件的内部结构
 published: 1
-date: 2021-12-06T07:14:56.151Z
+date: 2021-12-06T10:36:06.158Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T07:14:56.151Z
@@ -11,7 +11,7 @@ dateCreated: 2021-12-06T07:14:56.151Z
 <p>组件的内部结构<br>　　— Component Internals<br><br>　　前面章节从客户使用角度描述了XPCOM组件，本章从开发者角度讨论组件。 请仔细阅读，XPCOM组件是怎么实现的，你可以略过本章到下一章节，从下一章节开始将会一步一步创建WebLock组件。<br>&nbsp;</p>
 <h1>1. 用C++创建组件</h1>
 <p><br>　　让我们用C++开始XPCOM之旅吧。 XPCOM的大多数组件是用C++写的，然后编译为共享库（在windows下是DLL，Unix下是DSO）。<br>　　下面的图显示了包含组件实现代码的共享库和XPCOM framework 之间的关系。 在这个图里，外边界是共享库模块，模块里定义了一个组件。<br>　　</p>
-<figure class="image"><img src="/xpcom3-1.png">
+<figure class="image"><img src="/pic/xpcom3-1.png">
   <figcaption>图 A Component in the XPCOM Framework</figcaption>
 </figure>
 <p><br>　　当你以库的形式编译一个组件或模块的时候，这个库必须到处一个函数：NSGetModule。 这个函数时访问库的入口点。 它在组件注册或注销的时候被调用，当XPCOM想发现模块/库实现了哪些接口时，也会调用。 在本章中将对这个过程做个大概描述。<br>　　<br>　　正如文章“A Component in the XPCOM Framework”所描述，除了NSGetModule入口点，用于组件实际创建的nsIModule 和 nsIFactory接口，字符串，和XPCOM glue部分，将在后面（参见 XPCOM Glue）进行详细描述。 后面是一些为了方便开发的使用工具，比如智能指针，泛型模块支持，以及简单的字符串实现。 最大的也可能是最复杂的一个组成部分是组件本身的专用代码。<br>　　</p>
@@ -91,13 +91,13 @@ dateCreated: 2021-12-06T07:14:56.151Z
 <p>　　XPCOM包含了大量的东西。大多数XPCOM接口没有冻结，这意味着，他们只能被Gecko内部使用，不能被客户端使用。 XPCOM提供了很多数据结构，例如链表，AVL trees等等。 不要企图使用nsVoidArray或者另外的公共类代替你写你自己的链表，这已经被证明是一个严重的错误。 这个类在任何时间的改变都可能导致你的程序产生不可期待的行为。<br>　　XPCOM建立了一个非常开放的环境。 在运行时，如果你知道CID或者契约ID和接口ID，你可以获取你需要的任何服务或组件。 在XPIDL里定义了至少1300个接口，但只只有不到100个接口被冻结，这意味着开发者可能发现一些很有用的但是没有冻结的接口。除非这个接口在注释里显著的标明为冻结状态，否则你的代码（使用了该接口）可能随着此接口的版本变化，很容易崩溃。<br><br>&nbsp;</p>
 <h2>3.1 Glue库</h2>
 <p>　　总的说来，你应该避免使用任何在XPCOM和Gecko库里没有冻结的接口和符号。 然而，在XPCOM里还是有很多没有冻结的工具可以使用的，我们经常在组件编程里使用到这些工具。<br>　　例如，智能指针类，nsCOMPtr，它使得引用计数更少出错，这个实际上是没有冻结的。还有nsDebug，用来协助追踪Bug的类。 还有nsMemory，确保每个人使用的都是相通的堆，泛型工厂和模块。 为了避免每个开发者都把这些类复制到她的代码里，XPCOM提供了一个单一的库，包含了“没有冻结但是真正有帮助”的类，你可以在你的应用里使用它。<br><br><strong>XPCOM Clue and Tools</strong></p>
-<figure class="image"><img src="/xpcom3-2.png">
+<figure class="image"><img src="/pic/xpcom3-2.png">
   <figcaption><strong>XPCOM Clue and Tools</strong></figcaption>
 </figure>
 <p>　　这个库就是glue库。 它为你的组件和XPCOM之间，提供了一个桥，或者说是连接(glue)层。<br>　　XPCOM内置了glue库的一个版本，当你的组件使用了它，他就会链接到这个库：它直接包含了这些没有冻结的库的一个拷贝，这样XPCOM库版本的改变就不会影响到她。 你可以根据你的需要剔除不需要的片段。<br>　　<br>&nbsp;</p>
 <h2>3.2 XPCOM字符串类</h2>
 <p>　　XPCOM使用nsAString和nsACString等一些类作为基础的字符串类型。 这些类在Mozilla字符串指南里进行了描述（参见 Gecko Resources）。<br>　　这些字符串类提供了另外一个辅助类集合，他们在XPCOM里是没有冻结的。 很多组件和嵌入式应用需要链接到一些字符串类，但是这些代码太复杂，甚至比Glue的代码还要大。基于此，我们为开发者实现了一些轻量级的字符串类：nsEmbedString和nsEmbedCString。这些实现提供了nsAString/nsAString功能的最小集合。<br>　　在你的组件里，你可以通过使用nsEmbedString或其他类来让你的组件减肥。WebLock限制他自己使用nsEmbedString家族的相关类。<br><br><strong>String Classes and XPCOM</strong><br>&nbsp;</p>
-<figure class="image"><img src="/xpcom3-3.png">
+<figure class="image"><img src="/pic/xpcom3-3.png">
   <figcaption><strong>String Classes and XPCOM</strong></figcaption>
 </figure>
 <p><br>　　为了方便XPCOM的开发，glue库为公共功能提供了很多函数(参见 xpcom/build/nsXPCOM.h)。 当glue库初始化时，它从XPCOM库里动态加载，允许组件避免直接与XPCOM库链接。 创建XPCOM组件时，你不应该链接到XPCOM库——事实上，如果你这么做了，你会得到一些错误。</p>

@@ -2,7 +2,7 @@
 title: 4_创建组件的代码
 description: 创建组件的代码
 published: 1
-date: 2021-12-06T10:37:43.155Z
+date: 2021-12-06T10:39:14.972Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T07:23:02.376Z
@@ -30,7 +30,7 @@ dateCreated: 2021-12-06T07:23:02.376Z
 <h1>3. WebLock Module 源代码概述</h1>
 <p>正如我们在前面章节所提及的，组件是分层的。 每一个XPCOM组件主要由三层组成。 从内到外，第一层是XPCOM对象。 这个对象包含了业务逻辑，实现业务功能，例如，启动一个网络下载，实现下载进程的监听，或者提供一个新类型的处理功能。 在WebLock,这一层与多个Gecko服务协同工作，防止用户访问可接受域名清单里的域名。 另外的工厂和模块层这负责把XPCOM对象插入大的XPCOM系统。<br><br>在XPCOM对象层之上的是nsIFactory对象。 这个对象提供了XPCOM对象的基本抽象。 正如你在文章“Onion Peel View of XPCOM Component Creation,”你所看到的那样，它通过CreateInstance与XPCOM对象进行交互，这个函数将会根据你提供的CID和IID返回相应的对象。<br><br>再往外一层就是nsIModule层。 这个接口又提供了nsIFactory对象的进一步抽象，并可能允许多个nsIFactory对象。 本接口的关键在于getClassObject的返回类型不必非是nsIFactory。 nsIModule 可以请求XPCOM对象实现细节。 这非常有用，如果调用方需要知道像其线程模型，是不是单例，实现语言，等等。 在这种情况下，使用的接口是 nsIClassInfo。从外向内开始，“Onion Peel View of XPCOM Component Creation ”表示构造一个 XPCOM 对象的序列。</p>
 <p>&nbsp;</p>
-<figure class="image"><img src="/xpcom4-2.png">
+<figure class="image"><img src="/pic/xpcom4-2.png">
   <figcaption><strong>Onion Peel View of XPCOM Component Creation</strong></figcaption>
 </figure>
 <p>&nbsp;</p>
@@ -146,7 +146,7 @@ nsIFile *aFile,
 const char *aLoaderStr,
 const char *aType) = 0;</code></pre>
 <p><br>最后的是三个参数意思和nsIModule对象传递给RegisterSel的一样。<br><br>对于实现XPCOM接口的所有类，这个实现必须有一个类标识符，它将会共享给XPCOM的其他代码。 这个标识符叫做CID。可以通过uuidgen工具生成。通过CID和IID，你可以在XPCOM里使用任何类。 请思考下面的图：</p>
-<figure class="image"><img src="/xpcom4-3.png">
+<figure class="image"><img src="/pic/xpcom4-3.png">
   <figcaption><strong>Referencing Objects by ID</strong></figcaption>
 </figure>
 <p>&nbsp;</p>

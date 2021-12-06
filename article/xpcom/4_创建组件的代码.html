@@ -2,7 +2,7 @@
 title: 4_创建组件的代码
 description: 创建组件的代码
 published: 1
-date: 2021-12-06T10:39:14.972Z
+date: 2021-12-06T10:40:46.919Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T07:23:02.376Z
@@ -14,10 +14,9 @@ dateCreated: 2021-12-06T07:23:02.376Z
 <p>&nbsp;</p>
 <h1>1. WebLock组件用途</h1>
 <p>WebLock组件让你浏览器当前Book控件（类似于浏览器里面的一个Tab）处于一种特别模式，防止用户离开当前的域或者一个安全域集合。 一旦开启此功能，此“weblock”模式受密码保护，将一直持续到密码持有人关闭此功能。 他可以用于实现家长对儿童访问域名的控制，这样儿童访问的内容就被限制到了特定的域名上。 Web Lock User Interface 显示图标，用来激活web lock 模式（在左下角的状态栏），一旦你安装了weblock组件，图标就在那儿了，不离不弃。<br>&nbsp;</p>
-<figure class="image"><img src="/xpcom4-1.png">
+<figure class="image"><img src="/pic/xpcom4-1.png">
   <figcaption><strong>Web Lock User Interface</strong></figcaption>
 </figure>
-<p>​</p>
 <p>WebLock组件的大多数实际工作是有组件本身代码实现的，例如，发现需要使用的XPCOM接口，和把功能挂接到Gecko浏览器。</p>
 <h1>2. Component Registration</h1>
 <p>所有的XPCOM组件，无论存储在哪儿（共享库，Javascript文件，或者其它样式），在使用他们提供的功能之前，都需要注册。 注册是一个过程，发生在 XPCOM 的所有应用程序，无论他们是嵌入式的Gecko客户端、 Mozilla、 Netscape 7、 Compuserve 或使用 XPCOM 的任何其他软件。注册为应用程序提供了所需组件的正确使用信息。<br><br>WebLock组件为了注册，需要做大量的事情。 本章已经包含了组件库的组件相关接口实现：nsIModule和nsIFactory接口，这是你实现的代码的入口点。 一旦你的组件实现了这些接口，剩下的注册过程本身就很简单了。 应用程序通常使用regxpcom注册，这会在下一节描述。</p>

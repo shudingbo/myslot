@@ -1,0 +1,104 @@
+<!--
+title: 3_组件的内部结构
+description: 组件的内部结构
+published: 1
+date: 2021-12-06T07:14:56.151Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T07:14:56.151Z
+-->
+
+<p>组件的内部结构<br>　　— Component Internals<br><br>　　前面章节从客户使用角度描述了XPCOM组件，本章从开发者角度讨论组件。 请仔细阅读，XPCOM组件是怎么实现的，你可以略过本章到下一章节，从下一章节开始将会一步一步创建WebLock组件。<br>&nbsp;</p>
+<h1>1. 用C++创建组件</h1>
+<p><br>　　让我们用C++开始XPCOM之旅吧。 XPCOM的大多数组件是用C++写的，然后编译为共享库（在windows下是DLL，Unix下是DSO）。<br>　　下面的图显示了包含组件实现代码的共享库和XPCOM framework 之间的关系。 在这个图里，外边界是共享库模块，模块里定义了一个组件。<br>　　</p>
+<figure class="image"><img src="/xpcom3-1.png">
+  <figcaption>图 A Component in the XPCOM Framework</figcaption>
+</figure>
+<p><br>　　当你以库的形式编译一个组件或模块的时候，这个库必须到处一个函数：NSGetModule。 这个函数时访问库的入口点。 它在组件注册或注销的时候被调用，当XPCOM想发现模块/库实现了哪些接口时，也会调用。 在本章中将对这个过程做个大概描述。<br>　　<br>　　正如文章“A Component in the XPCOM Framework”所描述，除了NSGetModule入口点，用于组件实际创建的nsIModule 和 nsIFactory接口，字符串，和XPCOM glue部分，将在后面（参见 XPCOM Glue）进行详细描述。 后面是一些为了方便开发的使用工具，比如智能指针，泛型模块支持，以及简单的字符串实现。 最大的也可能是最复杂的一个组成部分是组件本身的专用代码。<br>　　</p>
+<p><strong>组件到底在哪儿呢？</strong></p>
+<p>　　组件放在模块里，模块在共享库文件里定义，一般它放在XPCOM应用程序的 components路径下面。<br>　　对于典型的Gecko安装，已经把一些包含了组件的库放在了components路径下，包括网络访问，布局，跨平台的UI界面，等等。<br>&nbsp;</p>
+<h1>2. XPCOM 初始化</h1>
+<p>　　要明白你的组件库什么时候，为什么被调用，你就需要弄明白XPCOM的初始化进程。当一个应用程序启动时，它会初始化XPCOM。XPCOM初始化事件可能由用户的某个操作触发，也有可能由应用程序启动时自己触发。 一个嵌入了Gecko的浏览器，可能在启动时通过嵌入式API的调用触发XPCOM的初始化。 另一个程序可能推迟XPCOM的初始化，直到它第一次需要使用XPCOM时。 在上面的任意一种情况下，XPCOM内部的初始化顺序是一样的。<br><br>　　XPCOM在应用初始化它后就启动了。 在启动时一些参数可以被传递给XPCOM，包括自定义特别路径（如组件路径）的位置。 这样可以指定XPCOM搜索组件的路径。</p>
+<p>&nbsp;</p>
+<h2>2.1 XPCOM 启动步骤</h2>
+<p>　　XPCOM的启动遵循下面六个步骤：</p>
+<ol>
+  <li>应用程序启动XPCOM</li>
+  <li>XPCOM发送开始启动的通知</li>
+  <li>XPCOM发现和处理组件清单</li>
+  <li>XPCOM发现和处理类型库 清单</li>
+  <li>如果XPCOM发现了新的组件，XPCOM注册它<ol>
+      <li>XPCOM调用autoregistration ,启动自动注册</li>
+      <li>XPCOM注册新组件</li>
+      <li>XPCOM调用autoregistration结束</li>
+    </ol>
+  </li>
+  <li>完成XPCOM启动，XPCOM通知启动过程结束</li>
+</ol>
+<p>&nbsp;</p>
+<p>　　组件和类型库清单在下面章节描述，“XPCOM Registry Manifests”</p>
+<p>&nbsp;</p>
+<h2>2.2 XPCOM Manifests</h2>
+<p>　　XPCOM使用叫做manifests的特殊文件来跟踪和保存在本地系统的组件相关信息。有两种类型的manifests用于跟踪XPCOM组件:<br>　　</p>
+<p><strong>组件manifests</strong></p>
+<p>&nbsp;</p>
+<p>　　当XPCOM第一次启动时，它查找组件manifest，这个文件是一个列表，记录了所有注册的组件，存储每个组件的一些细节信息。 XPCOM使用组件manifest决定那些组件要加载。 Mozilla 1.2在启动时调用的这个文件叫compreg.dat，存放在component 路径下，但正在努力将它从这个位置中移除以达到减弱以"应用为中心"(更以"用户为中心")。任何基于Gecko的应用程序，都可以自己设定这个路径。 XPCOM把这个文件加载进内存数据库。<br>　　组件manifest是组件和组件类的映射文件。 他制定了下列信息：</p>
+<ul>
+  <li>被注册组件在磁盘上的位置和文件大小</li>
+  <li>Class ID与位置的映射</li>
+  <li>契约ID与类ID的映射</li>
+</ul>
+<p>　　组件manifest映射组件文件映到指定实现的标识（CID），依照次序类ID被映射到更多的一般组件标识符（契约ID）。<br>&nbsp;</p>
+<p><strong>类型库Manifests</strong></p>
+<p>&nbsp;</p>
+<p>　　XPCOM加载另外一个重要的文件就是类型库manifest。 这个文件也放在components路径，文件名一般叫做xpti.dat。 它包含了系统的所有类型库文件的位置和查询路径。 这个文件也包含所有已知接口和连接到定义这些接口结构的类型库文件。 这些类型库文件都位于XPCOM可脚本化的核心并且是二进制的XPCOM组件结构。<br>　　类型库清单包含下列信息：</p>
+<ul>
+  <li>所有类型库文件的位置</li>
+  <li>所有已知接口到包含结构定义的类型库的映射</li>
+</ul>
+<p>　　通过这两个文件，XPCOM精确的知道哪些组件已经安装和哪些接口实现可用。 此外，它涉及到组件的类型库，在其中定义了它们所支持的接口的二进制表示形式。<br><br>　　下一节描述了怎么挂接到XPCOM启动和注册过程，怎么在这些清单中提供你的组件数据，以便你的组件能够在启动时被发现和注册。<br>　　</p>
+<h2>2.3 XPCOM中的注册方法</h2>
+<p>　　简单来说，注册就是让XPCOM知道你的组件的过程。 你可以在安装的时候显示注册你的组件，或者通过regxpcom程序，或者在 Service Manager使用autoregistration方法让XPCOM在指定的路径发现和注册组件：</p>
+<ul>
+  <li>XPInstall APIs</li>
+  <li>Regxpcom 命令行工具</li>
+  <li>Service Manager 的nsIComponentRegistrar APIs</li>
+</ul>
+<p>　　几个注册过程都是平等的。 本章将介绍在XPCOM初始化时的注册过程，下一章描述如何通过代码注册你的组件。<br>　　一旦manifests文件加载，XPCOM将检查是否有组件需要注册。 这里有两种方式可以注册你的组件。 第一种，使用XPInstall，是一个安装时的技术，它不一定会随着Gecko一起安装，它为你的组件在安装期间注册你的接口。 另外一种更加明显的方式，通过regxpcom程序注册你的接口，regxpcom是mozilla的一部分，也放在了Gecko SDK中。<br>　　Gecko嵌入的应用也可能提供自己的方式组册XPCOM组件（也应该是基于上面三种方式）。 一个应用，也能提供一个“registered-less”组件路径，组件将在启动的时候注册，关闭的时候注销。<br>　　当注册过程开始时，XPCOM会给所有的注册观察者发送一个广播通知，告诉他们XPCOM开始注册一个新组件了。 在所有的组件注册后，另一个通知将会触发，通知XPCOM完成了注册步骤。 nsIObserver接口处理这些通知，详细会在“Starting WebLock.”里讨论。<br>　　一旦注册完成，通知发送出去，也就意味着XPCOM已经就绪，准备听候调遣了。 如果你的组件注册到了XPCOM，那么它就可以被XPCOM系统的其他部分使用了。<br>　　</p>
+<h2>2.4 自动注册</h2>
+<p>　　Autoregistration这个术语，有时就等同于XPCOM注册。 在“What Is XPCOM Registration”章节里，我们描述了3种方式把组件组册到XPCOM里。 有的应用使用nsIComponentRegistrar接口，通过代码查看特别路径，然后把新放在路径下的组件注册到XPCOM里，这就是autoregistration。 你应该知道，为了能够使用你的组件，你必须安装和注册你的组件。<br>　　</p>
+<h2>2.5 关闭过程</h2>
+<p>　　当应用准备关闭XPCOM的时候，它调用 NS_ShutdownXPCOM。当此方法被调后，XPCOM将会依次执行下列操作：</p>
+<ol>
+  <li>XPCOM产生shutdown通知，并把通知发布到所有经过注册的观察者；</li>
+  <li>XPCOM关闭组件管理器，服务管理器和其关联的服务；</li>
+  <li>XPCOM释放所有的全局服务；</li>
+  <li>NS_ShutdownXPCOM返回，应用可以正常退出了。</li>
+</ol>
+<p><br><strong>不能阻止的Shutdown</strong><br><br>　　注意，关闭操作是不可阻止的。换种说法，当你观察到Shutdown事件时，你不能实现类似“确实要退出？”对话框。相反，Shutdown事件给了组件和或者潜入的应用最后一次机会来清理他们之前占用的没有释放的资源。 为了支持类似"确实要退出"对话框，应用程序需要提供更高级别的事件 （例如，允许取消的 startShutdown() 事件)。<br>　　此外请注意一旦你已经收到Shutdown通知，XPCOM 服务可能拒绝您访问。此时如果您访问 nsIServiceManager接口，XPCOM可能会返回一个错误，例如，在此通知期间，您可能需要保留你有兴趣使用的服务的引用计数。</p>
+<p>&nbsp;</p>
+<p><strong>组件加载器</strong></p>
+<p>　　你可以使用很多语言来些组件。 本指南只聚焦“native 组件”（输出NSGetModule符号的共享库）。 但是如果安装了Javascript的组件加载器，你就可以用JavaScript来写组件。<br>　　注册，住校，加载和管理多个组件类型，XPCOM抽象出了XPCOM组件和带组件加载器的XPCOM之间的接口。 这个加载器负责初始化，加载，卸载，支持代表每个组件的nsIModule接口。提供脚本化的组件支持是组件加载器的责任。<br>　　当编译个“native”组件时，组件加载器从包含组件的共享库里查找导出符号。“Native”在这里是指能够产生本地动态链接库的所有语言。 脚本语言和其他非native语言，通常都会提供方式来生成native库。 为了让非native的XPCOM组件能够正常工作，XPCOM必须有相应的组件加载器知道怎么处理该类型的组件。<br>　　XPConnect，举个例子，提供一个组件加载器，使得各种类型，包括接口及他们的参数，都可以用到JavaSrcipt。 每一个被XPCOM支持的语言，都必须有一个相应的组件加载器。<br>　　</p>
+<h2>2.6 XPCOM组件库的三个部分</h2>
+<p>　　XPCOM就像洋葱。XPCOM组件至少由3部分组成。他们从里到外依次是：</p>
+<ul>
+  <li>核心XPCOM对象；</li>
+  <li>工厂代码；</li>
+  <li>模块代码；</li>
+</ul>
+<p>　　<br>　　核心XPCOM对象就是你需要实现的核心功能的对象。例如，这个对象可能启动一个网络下载和实现监听这个过程的接口。 或者这个对象提供一些内容的处理。 无论它干什么，这个对象是XPCOM组件的核心，其它层都是为它提供支持的。 一个库可能包含多个核心对象。<br>　　在核心层上是工厂代码。 工厂对象为核心XPCOM对象提供基础的抽象。<br>　　最外面是模块代码。 模块接口提供另一个抽象（这次是工厂）和允许多个工厂对象。从组件库外部来看，那里是只有单一的入口点，NSGetModule()。此入口点可以扇出任意数量的工厂，并从那里，生成任意数量的 XPCOM 对象。<br>　　XPCOM里的工厂设计模式由nsIFactory代理。 模块层由nsIModulw接口代理。大多数的组件库之需要这两个接口，当然不能少了nsISupports接口，通过他们XPCOM可以加载，识别和使用它们的核心对象。<br>　　下一章，我们将开始写代码，编译组件库，到时你会看到我们使用的每一层接口和这些接口是怎么使用的。下面我们将介绍一些更快捷的方式创建工厂，模块。<br>　　<br>&nbsp;</p>
+<h1>3. XPCOM Glue</h1>
+<p>　　XPCOM包含了大量的东西。大多数XPCOM接口没有冻结，这意味着，他们只能被Gecko内部使用，不能被客户端使用。 XPCOM提供了很多数据结构，例如链表，AVL trees等等。 不要企图使用nsVoidArray或者另外的公共类代替你写你自己的链表，这已经被证明是一个严重的错误。 这个类在任何时间的改变都可能导致你的程序产生不可期待的行为。<br>　　XPCOM建立了一个非常开放的环境。 在运行时，如果你知道CID或者契约ID和接口ID，你可以获取你需要的任何服务或组件。 在XPIDL里定义了至少1300个接口，但只只有不到100个接口被冻结，这意味着开发者可能发现一些很有用的但是没有冻结的接口。除非这个接口在注释里显著的标明为冻结状态，否则你的代码（使用了该接口）可能随着此接口的版本变化，很容易崩溃。<br><br>&nbsp;</p>
+<h2>3.1 Glue库</h2>
+<p>　　总的说来，你应该避免使用任何在XPCOM和Gecko库里没有冻结的接口和符号。 然而，在XPCOM里还是有很多没有冻结的工具可以使用的，我们经常在组件编程里使用到这些工具。<br>　　例如，智能指针类，nsCOMPtr，它使得引用计数更少出错，这个实际上是没有冻结的。还有nsDebug，用来协助追踪Bug的类。 还有nsMemory，确保每个人使用的都是相通的堆，泛型工厂和模块。 为了避免每个开发者都把这些类复制到她的代码里，XPCOM提供了一个单一的库，包含了“没有冻结但是真正有帮助”的类，你可以在你的应用里使用它。<br><br><strong>XPCOM Clue and Tools</strong></p>
+<figure class="image"><img src="/xpcom3-2.png">
+  <figcaption><strong>XPCOM Clue and Tools</strong></figcaption>
+</figure>
+<p>　　这个库就是glue库。 它为你的组件和XPCOM之间，提供了一个桥，或者说是连接(glue)层。<br>　　XPCOM内置了glue库的一个版本，当你的组件使用了它，他就会链接到这个库：它直接包含了这些没有冻结的库的一个拷贝，这样XPCOM库版本的改变就不会影响到她。 你可以根据你的需要剔除不需要的片段。<br>　　<br>&nbsp;</p>
+<h2>3.2 XPCOM字符串类</h2>
+<p>　　XPCOM使用nsAString和nsACString等一些类作为基础的字符串类型。 这些类在Mozilla字符串指南里进行了描述（参见 Gecko Resources）。<br>　　这些字符串类提供了另外一个辅助类集合，他们在XPCOM里是没有冻结的。 很多组件和嵌入式应用需要链接到一些字符串类，但是这些代码太复杂，甚至比Glue的代码还要大。基于此，我们为开发者实现了一些轻量级的字符串类：nsEmbedString和nsEmbedCString。这些实现提供了nsAString/nsAString功能的最小集合。<br>　　在你的组件里，你可以通过使用nsEmbedString或其他类来让你的组件减肥。WebLock限制他自己使用nsEmbedString家族的相关类。<br><br><strong>String Classes and XPCOM</strong><br>&nbsp;</p>
+<figure class="image"><img src="/xpcom3-3.png">
+  <figcaption><strong>String Classes and XPCOM</strong></figcaption>
+</figure>
+<p><br>　　为了方便XPCOM的开发，glue库为公共功能提供了很多函数(参见 xpcom/build/nsXPCOM.h)。 当glue库初始化时，它从XPCOM库里动态加载，允许组件避免直接与XPCOM库链接。 创建XPCOM组件时，你不应该链接到XPCOM库——事实上，如果你这么做了，你会得到一些错误。</p>
+<p>​</p>

@@ -1,0 +1,148 @@
+<!--
+title: 2_使用XPCOM组件
+description: 使用XPCOM组件
+published: 1
+date: 2021-12-06T07:08:14.895Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T07:08:14.895Z
+-->
+
+<p>在Mozilla里组件是怎样获取和使用的呢？&nbsp;在Mozilla里组件的使用分为三个部分：一个是Mozilla怎么找到这些二进制组件，另外两个对应了客户端访问XPCOM组件的两种方式。</p>
+<p>&nbsp;</p>
+<h1>1.&nbsp;发现Mozilla组件</h1>
+<p>本书在编写时试图提供已冻结的XPCOM组件和他们的接口的参考信息。&nbsp;Mozilla嵌入跟踪了当前冻结的接口。</p>
+<p>Mozilla也提供了一些工具用于发现和显示在Gecko里的可运行的接口信息，例如工具"XPCOM&nbsp;Component&nbsp;Viewer"（下面会进行介绍），和MXR，基于Web的源代码查看工具。</p>
+<p>&nbsp;</p>
+<p>如何把XPCOM组件的信息以良好的形式提供给潜在的用户，是一个挑战。&nbsp;然而，就冻结的接口而言，通过这些组件实现的过程仍然在继续中。组件查看器不能区分组件是否冻结。&nbsp;你在MXR里看到的源代码，被冻结的接口，你可以在顶部看到标记&nbsp;@status&nbsp;frozen.</p>
+<p>&nbsp;</p>
+<h2>1.1 XPCOM&nbsp;组件查看器&nbsp;</h2>
+<p>XPCOM组件查看器(XPCOM&nbsp;Component&nbsp;Viewer)是你安装的浏览器的一个附件（放在了沙盒里，现在不再支持了）。&nbsp;你可以试一试附件&nbsp;XPCOMViewer,功能和XPCOM组件查看器相似。</p>
+<p><strong>XPCOM&nbsp;Component&nbsp;Viewer</strong></p>
+<figure class="image"><img src="/xpcom2-1.png"></figure>
+<p>​</p>
+<h1>2.&nbsp;在你的CPP里使用XPCOM组件</h1>
+<p>XPConnect使得把XPCOM组件作为一个JavaScript访问变得很容易，但是在C++里使用XPCOM组件也不会困难多少。</p>
+<p>下面是Managing&nbsp;Cookies的cpp版本，代码参照javascript版本，使用C++替换了JavaScript。</p>
+<h2>2.1 Managing&nbsp;Cookies&nbsp;from&nbsp;cpp</h2>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">nsCOMPtr&lt;nsIServiceManager&gt; servMan;
+
+nsresult rv = NS_GetServiceManager(getter_AddRefs(servMan));
+
+if (NS_FAILED(rv))
+
+  return -1;
+
+nsCOMPtr&lt;nsICookieManager&gt; cookieManager;
+
+rv = servMan-&gt;GetServiceByContractID("@mozilla.org/cookiemanager",
+
+                                     NS_GET_IID(nsICookieManager),
+
+                                     getter_AddRefs(cookieManager));
+
+if (NS_FAILED(rv))
+
+  return -1;
+
+PRUint32 len;
+
+deletedCookies-&gt;GetLength(&amp;len);
+
+for (int c=0; c&lt;len; c++)
+
+    cookieManager-&gt;Remove(deletedCookies[c].host,
+
+                          deletedCookies[c].name,
+
+                          deletedCookies[c].path,
+
+                          PR_FALSE);</code></pre>
+<p>如果你使用C++，那么上面的代码向你展现了获取XPCOM组件的步骤。&nbsp;</p>
+<p>&nbsp;</p>
+<h1>3.&nbsp;XPConnect：在Script里使用XPCOM组件</h1>
+<p>本章开始就讨论的CookieManager组件为我们从JavaScript角度进一步了解使用组件提供了一个很好的机会。&nbsp;下面的代码片段来自Mozilla的CookieManager对话框，你可以看到通过getService()方法创建的CookieManager的一个单例，通过它提供的功能让用户可以通过用户界面加载和移除Cookie。</p>
+<h2>3.1 Managing&nbsp;Cookies&nbsp;from&nbsp;JavaScript</h2>
+<pre><code class="language-cpp">var cmgr = Components.classes["@mozilla.org/cookiemanager;1"]
+
+                     .getService();
+
+cmgr = cmgr.QueryInterface(Components.interfaces.nsICookieManager);
+
+function loadCookies() {
+
+  // load cookies into a table
+
+  var enumerator = cmgr.enumerator;
+
+  var count = 0;
+
+  var showPolicyField = false;
+
+  while (enumerator.hasMoreElements()) {
+
+    var nextCookie = enumerator.getNext();
+
+    nextCookie = nextCookie.QueryInterface(Components.interfaces.nsICookie);
+
+    /* .... */
+
+}
+
+function FinalizeCookieDeletions() {
+
+  for (var c=0; c&lt;deletedCookies.length; c++) {
+
+    cmgr.remove(deletedCookies[c].host,
+
+                deletedCookies[c].name,
+
+                deletedCookies[c].path,
+
+                false);
+
+  } 
+
+  deletedCookies.length = 0;
+
+}</code></pre>
+<p>&nbsp;</p>
+<p>除了CookieManager调用的他自己的方法外，注意XPConnect对象和方法，他们把XPCOM组件反射成了JavaScript.</p>
+<p>组件是一个JavaScript对象，他控制着组件的连接，所有类被放如一个数组，你可以通过契约ID请求它。&nbsp;为了在JavaScript里实例化一个XPCOM组件，你需要传递要请求得组件的契约ID。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">var cmgr = Components.classes["@mozilla.org/cookiemanager;1"]
+
+                     .getService();</code></pre>
+<p>返回的&nbsp;cookiemanager对象提供了在类型库里定义的所有方法。&nbsp;要使用CookieManager组件，你可以向下面这样写代码，从系统里删除所有的Cookie：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">cmgr = Components.classes["@mozilla.org/cookiemanager;1"]
+
+                 .getService();
+
+cmgr = cmgr.QueryInterface(Components.interfaces.nsICookieManager);
+
+// delete all cookies
+
+function trashEm() {
+
+   cmgr.removeAll();
+
+}</code></pre>
+<p>这个例子展现的XPConnect&nbsp;glue的另一个重要的功能，所有对象的QueryInterface方法从XPCOM里反射到了JavaScript里。&nbsp;在C++里，你可以轻松的调用对象的这个方法。</p>
+<p>&nbsp;</p>
+<h1>4 服务&nbsp;vs&nbsp;常规实例</h1>
+<p>在设计时你应该考虑好，你的组件是通过服务还是常规实例的方式提供功能，现在通过本章你应该明白了关于组件的一些东东。&nbsp;实际上，在例子里getService()方法的功能也可以</p>
+<p>通过组件对象的createInstance()方法来实现，创建一个单独得而不是普通实例。</p>
+<p>&nbsp;</p>
+<p>单例模式用于创建服务的相关信息，参见"XPCOM&nbsp;Services"，记住，QueryInterface允许你查询一个对象支持的接口，在上面的例子中QueryInterface接口用于获取nsICookie接口，在实例里，JavaScript代码可以访问每一个cookie的名称和属性。</p>
+<p>&nbsp;</p>
+<p><strong>Note:&nbsp;cookie-manager-ui</strong></p>
+<p>&nbsp;</p>
+<p>注意UI不是组件的自身的一部分。&nbsp;XPCOM使得通过Mozilla的XPFE访问组件功能变得很方便，正如&nbsp;CookieManager展示的那样，但是组件本身没有提供UI。</p>
+<p><strong>Note:&nbsp;private-xpcom-interfaces</strong></p>
+<p>这里有一些异常。XPCOM接口也可能是私有的。&nbsp;私有的接口不需要在对外发布的IDL里公布。</p>
+<p>&nbsp;</p>
+<p><strong>Note:&nbsp;cookie-manager-in-tutorial</strong></p>
+<p>CookieManager&nbsp;组件在本指南里用来实现&nbsp;web&nbsp;locking的持久化（存储）功能。</p>
+<p>​</p>

@@ -2,15 +2,13 @@
 title: 1_XPCOM概述
 description: 
 published: 1
-date: 2021-12-06T07:08:31.995Z
+date: 2021-12-06T07:10:03.532Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T06:59:43.746Z
 -->
 
-<p>​</p>
-<p>XPCOM概览</p>
-<p><br>本章为XPCOM的快速导览，对XPCOM和组件开发的基础思想和技术做了说明，这些说明从较高层次来描述的，只是为了熟悉一下本指南需要的一些背景知识。</p>
+<p>本章为XPCOM的快速导览，对XPCOM和组件开发的基础思想和技术做了说明，这些说明从较高层次来描述的，只是为了熟悉一下本指南需要的一些背景知识。</p>
 <h1>1. XPCOM 解决方案</h1>
 <p><br>XPCOM ( Cross Platform Component Object Model)，是一个跨平台的软件框架，它使开发人员把一个大的软件工程分解成各个小的独立的模块，然后再运行时再组装在一起，这就是组件化的思想。<br><br>XPCOM的目标是让不同开发者独立开发实现相应的软件片段（组件）。 为了解决应用程序里各组件之间的互连问题，XPCOM把组件的实现和接口分离开来（相关主题在 Interface[https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/An_Overview_of_XPCOM#Interfaces] 章节讨论），XPCOM也提供了几个工具和库，以便加载和维护这些组件，服务，帮助开发者写模块化的跨平台的代码和版本支持，因此组件可以进行不中断替换和升级。 使用XPCOM，开发者创建的组件可以在不同的应用程序里重用。<br><br>XPCOM不仅仅支持组件化软件开发，他也提供了很多开发平台提供的功能，例如：</p>
 <ul>
@@ -52,8 +50,6 @@ void Init();
 
 void DoSomethingUseful();
 };</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br><br>为了保证这个系统正常工作，客户端程序员必须密切关注组件的任何规则。 这是按照合同约定的未封装的类：一组规则，定义了每一个可以被调用的方法，它是怎么做的。一个规则可以指定DoSomethingUseful，可能它只能在调用init()后调用。 DoSomethingUseful方法可能会做一些检查，以确保是否满足条件(init方法被调用)。<br><br><strong>封装 SomeInterface 接口</strong></p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">class SomeInterface
@@ -61,13 +57,10 @@ void DoSomethingUseful();
 public:
 virtual void DoSomethingUseful() = 0;
 };</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br><br>实现代码可以从这个类派生，实现虚方法。 客户可以使用工厂设计模式创建对象，进一步封装实现。 在XPCOM里客户端以这种方式与组件的实现进行隔离，只通过接口访问需要的功能。</p>
 <p>&nbsp;</p>
 <h2>4.2 nsISupports基接口</h2>
 <p>在基于接口和组件的编程中有两个最基本的问题：组件的生命周期(也叫做对象所有权)和接口查询，或者说能够在运行时获得组件支持的接口。 这一节对XPCOM里所有接口的基接口(nsISupports)进行说明，他为开发者解决了上述两个问题。</p>
-<p>&nbsp;</p>
 <p>&nbsp;</p>
 <h3><strong>4.2.1 对象所有者</strong></h3>
 <p>&nbsp;&nbsp; 在XPCOM里，组件可能实现任意数量的接口，组件需要对接口引用进行计数。 当一个组件创建时，就会对其接口被客户使用的情况进行计数（就是大家知道的引用计数功能）。 当客户实例化组件时，引用计数就会自动增长；然后在组件的整个生命周期里，引用计数或增或减。 当所有客户不再使用组件，引用计数就会变为0，组件就会删除自己。<br><br>&nbsp;&nbsp; 当客户负责接口的使用时，这个过程是很直接的。 XPCOM有工具让其变得更加容易，我们会在后面进行描述。我们往往要面对一些真实的问题，例如，一个客户在使用完接口后，忘记了递减引用计数。 当这种情况发生时，接口就永远不会被释放，导致内存泄漏。 系统的引用计数也是如此，就如很多XPCOM里面的东西一样，仅仅一个客户和实现之间的约定。</p>
@@ -87,8 +80,6 @@ NS_IMETHOD QueryInterface(const nsIID &amp;aIID, void **aResult);
 NS_IMETHOD_(nsrefcnt) AddRef(void);
 NS_IMETHOD_(nsrefcnt) Release(void);
 };</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>　　使用到的变量类型，在 XPCOM Types()里进行描述。一个完整的nsISupports接口的实现，参见 A Reference Implementation of QueryInterface（）。<br><br><strong>&nbsp;nsISupports接口实现</strong></p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">// initialize the reference count to 0
@@ -133,10 +124,8 @@ return 0;
 return mRefCnt;
 }</code></pre>
 <p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <h3>4.2.3 对象接口发现</h3>
 <p><br>继承是面向对象语言的一个重要特点。 当一个类从另外一个类继承时，这个类就可以重载基类函数的缺省行为，这对于创建更加特别的类是很有效的，如下面所示：</p>
-<p>&nbsp;</p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">class Shape
 {
@@ -159,8 +148,6 @@ virtual Draw();
 Circle(int x, int y, int radius);
 virtual ~Circle();
 };</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br><br>Circle继承自Shape类。一个Circle类是一个Shape，Shape是基类，Circle是他的子类。<br><br>在XPCOM，所有接口类从nsISupports类派生，因此所有的对象都是nsISupports，但他们还是其他类，拥有更多的特色的类（你需要在运行时找出此特别的类）。 在XPCOM里，通过nsISupports成员函数QueryInterface函数，我们可以发现它提供的其他不同的接口。<br><br>在C++里，你可以使用dynamic_cast&lt;&gt;，如果Shape对象不能转换为Circle，他会抛出异常。 但是开启exceptions和RTTI会带来性能上问题，并且还需要考虑在不同平台上的兼容性，因此XPCOM没有这么做。</p>
 <p>&nbsp;</p>
 <h3>4.2.4 XPCOM里的exception</h3>
@@ -173,8 +160,6 @@ void **result) = 0;
 long AddRef(void) = 0;
 long Release(void) = 0;
 };</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>QueryInterface方法的第一个参数nsIID是对IID的一个封装，它包含了3个方法，Equals，Parse和ToString.Equals使用最多，因为他在接口的查询过程中，用于比较两个接口。<br><br>当你实现nsISupports类时，你必须要确保QueryInterface返回一个有效值。QueryInterface因该支持组件支持的所有接口。<br><br>在实现QueryInterface函数时，IID参数会被检查。 如果匹配，则返回对象的指针（转换为void）,并增加引用计数。 不匹配，类就返回一个错误码，指针为NULL。<br><br>在上面的例子中，使用C-style转换就可以了。</p>
 <p>&nbsp;</p>
 <h1>5. XPCOM Identifiers</h1>
@@ -183,31 +168,23 @@ long Release(void) = 0;
 <h2>5.1 CID</h2>
 <p>一个CID是一个128位的数字，用于标识一个类或组件。 nsISupports的CID看起来如下面样式：<br><br>00000000-0000-0000-c000-000000000046<br><br>在代码里直接使用CID显得太笨拙了，一般我们使用 #define 来定义别名，例如：</p>
 <p>&nbsp;</p>
-<p>&nbsp;</p>
 <pre><code class="language-cpp">#define SAMPLE_CID \
 { 0x777f7150, 0x4a2b, 0x4301, \
 { 0xad, 0x10, 0x5e, 0xab, 0x25, 0xb3, 0x22, 0xaa}} </code></pre>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>你可能已经在很多地方看到了这种用法。下面的宏申明了一个CID常量：</p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">static NS_DEFINE_CID(kWebShellCID, NS_WEB_SHELL_CID);</code></pre>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>一个CID有时也被当作类标识符。 如果一个CID标识的类实现了多个接口，在发布时CID需要保证类实现的接口集的完整性。</p>
-<p>&nbsp;</p>
 <p>&nbsp;</p>
 <h2>5.2 Contract ID</h2>
 <p>契约标识符是一个人可识别的字符串，用于组件的访问。 可以通过CID或契约ID从组件管理器获取组件。 下面是LDAP操作组件的契约ID：</p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">"@mozilla.org/network/ldap-operation;1"</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>契约ID的格式由组件域，模块，组件名字和版本号组成，各部分之间用"/"分隔.<br><br>象CID一样，契约ID涉及到接口的实现，就是IID干的事。但是契约ID并不和某一具体的实现绑定，和CID一样。一个契约ID只是表示他想实现的一组接口。 契约ID和CID不同之处在于，它可能重载组件（某一组件的不同实现版本）。</p>
 <h1>6. 工厂</h1>
 <p>当代码分割为一个一个组件，客户端代码通常使用 new操作来实例化一个对象：</p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">SomeClass* component = new SomeClass();</code></pre>
-<p>&nbsp;</p>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br>这种方式需要客户端知道组件的细节，至少要知道他有多大。 工厂设计模式用于封装对象的构建。 工厂的目标是不需要把对象实现的细节和对象初始化流程暴漏给客户端。 在SomeClass例子中，SomeClass的构造和初始化函数，实现了SomeInterface抽象类，在工厂设计模式中，它被包含在了New_SomeInterface函数里：<br><br>构建封装</p>
 <p>&nbsp;</p>
 <pre><code class="language-cpp">int New_SomeInterface(SomeInterface** ret)
@@ -227,8 +204,7 @@ return -1;
 *ret = static_cast&lt;SomeInterface*&gt;(out);
 return 0;
 } </code></pre>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
-<p><br><br>工厂就是一个类，用于管理，创建组件的实例。 在XPCOM里工厂由nsIFactory接口实现，它使用上面所示的工厂设计模式封装对象的创建和初始化。<br>上面例子只是一个简单的无状态的工厂，这在真实编程中往往是不够的。工厂一般需要存储一些状态。 至少工厂需要保存它创建的对象的信息。 当工厂管理共享库的类的实例的时候，例如，他需要知道他什么时候可以卸载这个动态库。<br><br>工厂的另一个状态用于保存一个对象是否是单例对象。 例如，如果工厂创建了一个单例对象，那么后续的对象创建的请求都应该返回同一个对象。 尽管有其他更好的工具来处理单例，一个开发者可能想使用这个信息，以确保一个单例对象存在可以调用。<br><br>使用工厂类的来处理工厂的方式也可以直接使用函数来实现，对需要保存状态的直接使用全局变量来实现，但是使用工厂类的方式，还是有他的好处的。例如，你可以从iinterface接口派生，那么你就可以让工厂对象他自己管理其生命周期。 这点很重要，尤其在你有一打工厂对象需要卸载的时候。 另一个好处就是，通过使用nsISupport接口你可以支持，他引用的其他接口。 正如我们将在讨论nsIClassInfo那样，一些工厂支持查询一些潜在的实现信息，例如，使用对象是用什么语言写的，对象支持的接口，等等。这种"future-proffing"是从nsISupports集成来的关键特点。</p>
+<p><br>工厂就是一个类，用于管理，创建组件的实例。 在XPCOM里工厂由nsIFactory接口实现，它使用上面所示的工厂设计模式封装对象的创建和初始化。<br>上面例子只是一个简单的无状态的工厂，这在真实编程中往往是不够的。工厂一般需要存储一些状态。 至少工厂需要保存它创建的对象的信息。 当工厂管理共享库的类的实例的时候，例如，他需要知道他什么时候可以卸载这个动态库。<br><br>工厂的另一个状态用于保存一个对象是否是单例对象。 例如，如果工厂创建了一个单例对象，那么后续的对象创建的请求都应该返回同一个对象。 尽管有其他更好的工具来处理单例，一个开发者可能想使用这个信息，以确保一个单例对象存在可以调用。<br><br>使用工厂类的来处理工厂的方式也可以直接使用函数来实现，对需要保存状态的直接使用全局变量来实现，但是使用工厂类的方式，还是有他的好处的。例如，你可以从iinterface接口派生，那么你就可以让工厂对象他自己管理其生命周期。 这点很重要，尤其在你有一打工厂对象需要卸载的时候。 另一个好处就是，通过使用nsISupport接口你可以支持，他引用的其他接口。 正如我们将在讨论nsIClassInfo那样，一些工厂支持查询一些潜在的实现信息，例如，使用对象是用什么语言写的，对象支持的接口，等等。这种"future-proffing"是从nsISupports集成来的关键特点。</p>
 <p>&nbsp;</p>
 <h2>6.1 XPIDL和Type Libraries</h2>
 <p>如何定义接口，让其可以跨平台，语言，本地开发环境？ 使用IDL(Interface define language)是一种简单而有效的方式。 XPCOM使用基于CORBA OMG规范的变体接口定义语言，XPIDL，可以通过它指定接口的方法，属性，常量，甚至可以定义接口的继承。<br><br>使用XPIDL来定义你的接口时，需要注意一些缺陷。 它不支持多重继承。 如果你定义一个新的接口，它不能继承自多个接口，只能是一个。 另一个针对XPIDL定义接口的限制是，他的方法名称必须不一致。你可能有两个方法有相同的函数名，但是参数不一样，在XPIDL里一个变通方案就是使用不同的函数名。</p>
@@ -237,7 +213,6 @@ return 0;
 void FooWithString(in string x);
 void FooWithURI(in nsIURI x);
 </code></pre>
-<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
 <p><br><br>然而，这些缺点并不能阻碍我们使用XPIDL来完成我们的工作。 XPIDL允许你生成类型库(typelibs)，后缀名为.xpt的文件。 类型库文件是接口的二进制表现形式。 它为非C++的其它语言提供了访问接口的能力。 当组件被其它语言访问时，他们可以使用二进制类型库访问接口，知道支持什么方法，和怎么调用。 XPCOM这方面的能力叫做XPConnect。 XPConnect是XPCOM的一层，为其他语言提供了访问XPCOM组件的能力，例如，javascript语言。 关于XPConnect的更多信息，参见 Connecting to Components from the Interface（https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/Using_XPCOM_Components#Connecting_to_Components_from_the_Interface）<br><br>当一个组件支持从其他非C++语言访问时，例如javascript，我们就说他的接口被反射进了那种语言。 每个被反射的接口必须要有一个类型库。 现在你可以使用C/C++,javascript写组件，随后也可以在有XPCOM绑定的Ruby和Perl里使用。</p>
 <p>&nbsp;</p>
 <h3>6.1.1 使用其它语言写组件</h3>
@@ -245,12 +220,12 @@ void FooWithURI(in nsIURI x);
 <h1>7. XPCOM Services</h1>
 <p>当客户端通常在需要使用组件提供的功能时才实例化一个新的对象。 但是有一种类型的对象叫做服务，他们总是只有一个拷贝。 每次客户端需要访问服务提供的功能时，它访问的都是服务的同一个实例。 提供功能的单点访问属于单例设计模式范畴。</p>
 <p>在XPCOM，除了组件的支持和管理外，还提供了大量的服务帮助开发者写跨平台的组件。 这些服务包括一个跨平台的文件抽象，它提供了统一和强大的访问文件，目录服务，以维持应用程序的位置和系统特定的位置；一个内存管理，以确保每个使用这都使用相同的内存分配器；一个事件通知系统，允许进行简单的事件传输。 本教程将展示如何使用这些组件和服务，详细信息，参见XPCOM API。</p>
+<p>&nbsp;</p>
 <h1>8. XPCOM 类型</h1>
 <p><br>在下面的实例中将会有一些XPCOM申明类型和简单的宏被使用，这些类型大多数只是简单的映射。 更多地类型描述将会在后续章节出现。</p>
 <p>&nbsp;</p>
 <h2>8.1 Method Types</h2>
 <p><br>下面的类型集合用于确保XPCOM方法正确的调用约定和返回类型。</p>
-<p>&nbsp;</p>
 <p>&nbsp;</p>
 <figure class="table" style="height:163px;width:606px;">
   <table>

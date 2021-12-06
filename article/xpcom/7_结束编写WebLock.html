@@ -1,0 +1,40 @@
+<!--
+title: 7_结束编写WebLock
+description: 结束编写WebLock
+published: 1
+date: 2021-12-06T10:52:12.881Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T10:52:12.881Z
+-->
+
+<p>​ (完整文章参见：<a href="http://www.yutools.com/wp/?p=106">XPCOM指南-7_结束编写WebLock</a>)</p>
+<p>注：&nbsp;本文部分翻译来自<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Finishing_the_Component">官网</a></p>
+<p>现在您已创建组件的大多数基础结构。&nbsp;该组件可以被XPCOM和类别管理器识别，那样在&nbsp;XPCOM初始化时，它就可以开启动。&nbsp;组件启动时，它会读取存储在本地文件系统里Url列表，填充到相应的二进制结构。</p>
+<h1><strong>1. Using&nbsp;Frozen&nbsp;Interfaces</strong></h1>
+<p>然而，现在阻止站点的核心功能仍然缺失。&nbsp;这个接口仍然没有冻结，组件开发人员需要讨论那些功能应该完全公开，所以API没有准备好发布。&nbsp;这让你处于和大多数使用Mozilla的开发者一样的境地—你想使用一些特定的功能，但是接口似乎天天都在变。</p>
+<p>&nbsp;</p>
+<p>所有的Mozilla的源代码是公开的，并且接口使用也很容易。&nbsp;抓一个合适的头文件，使用组件或者服务管理器访问你需要的接口和XPCOM对象，实现你将会在你的项目里实现的接口。&nbsp;这带来了很大的灵活性，当然你会失去一些兼容性。&nbsp;如果你使用没有冻结的“东西”，那个东西将来可能随着Gecko的版本变化而变化。</p>
+<p>如果你想你的组件能够对来自Gecko的变化免疫，你必须只使用已经冻结的接口和APIs。&nbsp;一般这会在接口申明上面的进行说明。&nbsp;例如，下面的nsIServiceManager：</p>
+<pre><code class="language-cpp">/**
+ * The nsIServiceManager manager interface provides a means to obtain
+ * global services in an application. The service manager depends
+ * on the repository to find and instantiate factories to obtain
+ * services.
+ *
+ * Users of the service manager must first obtain a pointer to the
+ * global service manager by calling NS_GetServiceManager. After that,
+ * they can request specific services by calling GetService.
+ * When they are finished they can NS_RELEASE() the service as usual.
+ *
+ * A user of a service may keep references to particular services
+ * indefinitely and only must call Release when it shuts down.
+ *
+ * @status FROZEN
+ */</code></pre>
+<p>&nbsp;</p>
+<p>冻结的接口和函数时GECKO&nbsp;SDK的一部分。&nbsp;有一个经验，SDK外部的接口可当作是“实验性”的或者未冻结的。&nbsp;参见侧边拦的信息，它描述了冻结或未冻结的接口怎么影响你的软件开发，它还包括了接口变化会导致严重破坏的一些技术细节。</p>
+<p><strong>使用未冻结接口的危险性</strong></p>
+<p><strong>---------</strong></p>
+<p><strong>更多内容参见：</strong><a href="http://www.yutools.com/wp/xpcom%e6%8c%87%e5%8d%97-7_%e7%bb%93%e6%9d%9f%e7%bc%96%e5%86%99weblock/"><strong>XPCOM指南-7_结束编写WebLock</strong></a></p>
+<p>​</p>

@@ -1,0 +1,24 @@
+<!--
+title: 6_开始编写WebLock
+description: 开始编写WebLock
+published: 1
+date: 2021-12-06T10:50:28.342Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T10:50:28.342Z
+-->
+
+<p>（完整内容参见：<a href="http://www.yutools.com/wp/?p=83">&nbsp;XPCOM指南-6_开始编写WebLock</a>）</p>
+<p>注：&nbsp;本文部分翻译来自<a href="https://developer.mozilla.org/zh-CN/docs/%E5%88%9B%E5%BB%BA_XPCOM_%E7%BB%84%E4%BB%B6/%E5%BC%80%E5%A7%8BWebLock">官网</a></p>
+<p>在本章，我们开始设计和实现网络锁定功能本身。我们已经建立了实现多数的通用组件功能模块（例如注册）。这章将关注实际操作网页锁定的功能。</p>
+<h1>1.&nbsp;Getting&nbsp;Called&nbsp;at&nbsp;Startup</h1>
+<p>没有人是一个孤岛，组件也一样。你所建立的例子组件到目前为止还没有任何功能。他被注册以后，他没做任何事情。</p>
+<p>为了当某些事件发生的时候能够触发相应动作（如，启动）或者接收到相应的事件通知，例子组件需要挂接到Mozilla，或者覆盖一个现存组件，或者在Mozilla上注册到一些事件（组件关心的）。WebLock用后面的方式，在Gecko&nbsp;Profile&nbsp;Startup事件发生的时候被触发产生调用。当Gecko应用启动的时候，会创建注册的组件，并通过通用观察者接口（nsIObserver）发出通知。</p>
+<p>Observer是一些对象，当特定的事件发生时（他们关心的事件），会接收到相应的通知。这个机制很好，对象之间不需要相互了解细节，就可以进行消息传送。</p>
+<p>通常，一个对象会通知一系列观察者。例如一个对象被创建的时候它的observe方法被调用，或者它可以注册一个消息，当XPCOM关闭的时候就可以接收到相应的通知。这个接口的核心是observe方法。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">void observe(in nsISupports aSubject, 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; in string aTopic, 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; in wstring aData);</code></pre>
+<p>实际上observer方法的三个参数（aSubject,&nbsp;aTopic和aData）没有什么限制。这些参数根据事件的类型变化。例如，XPCOM关闭的时候，aSubject和aData被定&nbsp;义，aTopic被定义为“xpcom-shutdown”，如果你的对象希望注册到这些事件上面，他首先要实现nsIObserver接口，一旦你完成这些，实现nsIObserverService的observer服务将会利用接口通知你的对象，如下所示：</p>
+<p>&nbsp;</p>

@@ -1,0 +1,22 @@
+<!--
+title: XPCOM 指南
+description: 
+published: 1
+date: 2021-12-06T06:56:26.707Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T06:56:26.707Z
+-->
+
+<h1><strong>指南结构</strong></h1>
+<p>&nbsp;</p>
+<p>本系列文章，通过创建一个&nbsp;WebLock&nbsp;组件来描述XPCOM组件的创建过程。WebLock组件为基于Gecko的浏览器提供阻塞站点的功能。创建插件由下面的几个步骤组成，每个步骤都有它自己的章节，每一章都有大量的主题进行讨论。</p>
+<p>&nbsp;</p>
+<ul>
+  <li>为组件创建一些通用的代码</li>
+  <li>使用C++宏，字符串类和智能指针优化你的代码</li>
+  <li>定义组件的功能；为这些功能创建一个XPIDL接口；为自定义的WebLock组件创建实现代码。</li>
+  <li>实现WebLock组件:&nbsp;nsIContentPolicy,file&nbsp;I/O,locking等等</li>
+  <li>为组件创建用户界面</li>
+  <li>打包组件用于发布和安装</li>
+</ul>

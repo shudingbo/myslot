@@ -1,0 +1,298 @@
+<!--
+title: 5_使用XPCOM实用工具简化你的生活
+description: 使用XPCOM实用工具简化你的生活
+published: 1
+date: 2021-12-06T10:49:03.760Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-06T10:49:03.760Z
+-->
+
+<p>​本章回顾你已经在教程第一部分建立的代码&nbsp;(see&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/en/Creating_XPCOM_Components/Creating_the_Component_Code#webLock1.cpp">webLock1.cpp</a>&nbsp;in&nbsp;the&nbsp;previous&nbsp;chapter)&nbsp;并且使用&nbsp;XPCOM&nbsp;工具类让代码更容易更有效.&nbsp;同时，介绍一个在XPCOM和Gecko&nbsp;API中广泛使用基本的字符串类型。</p>
+<p>作为起点，第一部分描述可以替代webLock1.cpp中的很多代码的C++&nbsp;宏.&nbsp;很多用来完成软件组织和组件注册的代码都可以缩减为精简的数据结构和宏代码。</p>
+<h1>1.&nbsp;XPCOM&nbsp;宏</h1>
+<p>为了让C++开发简单些，XPCOM框架提供了大量的宏。&nbsp;尽管它们之间，有些重叠(例如，高层的宏可以用其他的宏来组织)，他们通常可以组织成如下的类别。</p>
+<h2>1.1&nbsp;通用XPCOM&nbsp;Module宏</h2>
+<p>前一章节，对从头创建一个常规组件要做的工作进行了详细描述。&nbsp;但是输入的代码太多了，且这些代码里只有很小一部分是WebLock独有的。&nbsp;怎么提高你的效率，让你在创建一个新的组件库时，只需要把代码复制过去，做较小的改动就可以重复利用呢！&nbsp;XPCOM提供一些列的module&nbsp;宏来解决这个问题。</p>
+<p>这些宏编译时展开为“通用”的实现，他们不会为你写你的组件提供更多的柔韧性。&nbsp;他们优点在于可以让你快速开发。&nbsp;这一点，你比较下面的weblock2.cpp和前一章的weblock1.cpp。</p>
+<p>Module宏包含了一组定义NSGetModule入口点（输出函数）的宏，这需要nsIModule实现代码和为你的实现类创建一个通用的工厂。&nbsp;通过使用这些宏，大多数与你组件自生功能不相关的代码可以实现（如工厂实现）。</p>
+<p>注意，本节描述的这些宏看起来都有些相似，请仔细区分，他们适合于不同的场景。&nbsp;有些宏可能只是在模块创建或销毁的时候调用了某个函数。&nbsp;下表列出了本节讨论的宏。</p>
+<p><strong>XPCOM&nbsp;Module&nbsp;Macros</strong></p>
+<figure class="table" style="width:584px;">
+  <table>
+    <tbody>
+      <tr>
+        <td>宏</td>
+        <td>描述</td>
+      </tr>
+      <tr>
+        <td>NS_IMPL_NSGETMODULE(name,&nbsp;components)</td>
+        <td>实现组件的&nbsp;nsIModule&nbsp;接口，参数是组件的名字和要实现的组件的列表</td>
+      </tr>
+      <tr>
+        <td>NS_IMPL_NSGETMODULE_WITH_CTOR(name,&nbsp;components,&nbsp;ctor)</td>
+        <td>与上面宏功能一样，但是可以在模块创建后，调用传入的函数</td>
+      </tr>
+      <tr>
+        <td>NS_IMPL_NSGETMODULE_WITH_DTOR(name,&nbsp;components,&nbsp;dtor)</td>
+        <td>与第一个宏功能一样，但是可以在模块销毁时，调用传入的函数</td>
+      </tr>
+      <tr>
+        <td>NS_IMPL_NSGETMODULE_WITH_CTOR_DTOR(name,&nbsp;components,&nbsp;ctor,&nbsp;dtor)</td>
+        <td>第二和第三个宏的组合</td>
+      </tr>
+    </tbody>
+  </table>
+</figure>
+<p><strong>模块实现宏</strong></p>
+<p>一般情况下，使用NS_IMPL_NSGETMODULE宏就可以了，不需要任何回调，但是所有宏都遵循相同的模式。&nbsp;这些宏的所有工作都是针对components参数表示的组件数组。每一个结构描述了一个要注册到XPCOM的CID。&nbsp;</p>
+<p>这些宏的第一个参数表示模块的名字。&nbsp;在调试环境下，当组件加载或卸载的时候，这个字符串会打印在屏幕上。&nbsp;你用该使用一个友好的名字。&nbsp;下一个参数结构体包含了下面四部分信息：</p>
+<ul>
+  <li>·&nbsp;人可识别的类名</li>
+  <li>·&nbsp;类ID(CID)</li>
+  <li>·&nbsp;契约ID&nbsp;(an&nbsp;optional&nbsp;but&nbsp;recommended&nbsp;argument)</li>
+  <li>·&nbsp;对象的构造函数</li>
+</ul>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">static const nsModuleComponentInfo components[] =
+{
+  { "Pretty Class Name",
+    CID,
+    CONTRACT_ID,
+    Constructor
+  },
+
+  // ...
+};</code></pre>
+<p>需要注意的是，这个宏可以支持在一个模块里创建多个组件。&nbsp;例如，Gecko里的网络库(“necko”)在他的nsModuleComponentInfo&nbsp;数组里，就包含了操作50个组件。<br>nsModuleComponentInfo&nbsp;结构的第一个参数是组件的名字。&nbsp;现在这个参数没有什么实际的用途，仅仅是组件的简要描述信息。</p>
+<p>nsModuleComponentInfo&nbsp;结构的第二个参数是CID。这个通常用#define进行申明。&nbsp;格式如下所示：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">#define NS_IOSERVICE_CID                             \
+{ /* 9ac9e770-18bc-11d3-9337-00104ba0fd40 */         \
+    0x9ac9e770,                                      \
+    0x18bc,                                          \
+    0x11d3,                                          \
+    {0x93, 0x37, 0x00, 0x10, 0x4b, 0xa0, 0xfd, 0x40} \
+}</code></pre>
+<p><br>下一个成员是契约ID字符串，通常在头文件里定义。&nbsp;这3个成员也是我们在前面介绍的RegisterFactoryLocation方法所需的三个参数。&nbsp;当你使用这些实现宏时，你必须申明该对象构造函数，&nbsp;这样你就不必单独编写工厂对象了。&nbsp;</p>
+<p>&nbsp;</p>
+<p><strong>工厂宏</strong></p>
+<p>工厂宏使实现一个工厂变得很容易。&nbsp;你只需要给出ConcreteClass的类名，工厂宏申明如下：</p>
+<pre><code class="language-cpp">NS_GENERIC_FACTORY_CONSTRUCTOR(ConcreteClass)</code></pre>
+<p>&nbsp;</p>
+<p>这个宏将返回一个叫做&nbsp;ConcreteClassConstructor&nbsp;的函数，她是nsModuleComponentInfo结构体的最后一个成员。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">#include "nsIGenericFactory.h"
+
+static const nsModuleComponentInfo components[] =
+{
+  { "Pretty Class Name",
+    SAMPLE_CID,
+    "@company.com/sample",
+    SampleConstructor
+  }
+}
+
+NS_IMPL_NSGETMODULE(nsSampleModule, components)</code></pre>
+<p>&nbsp;</p>
+<h2>1.2&nbsp;通用实现宏</h2>
+<p>每一个XPCOM对象都要实现&nbsp;nsISupports接口，但是一遍又一遍的写相似的实现代码真的很烦。&nbsp;XPCOM提供了一些实现宏来解决这个麻烦，除非你在引用计数管理或者接口发现上有特别的需求，否则他们都是适用的。&nbsp;这些宏帮你实现&nbsp;nsISupports，你不需要自己写代码了，&nbsp;NS_IMPL_ISUPPORTS1宏实现了AddRef,&nbsp;Release&nbsp;和&nbsp;QueryInterface接口。</p>
+<pre><code class="language-plaintext">NS_IMPL_ISUPPORTS1(classname, interface1)</code></pre>
+<p>另外，如果你的实现超过了一个接口，你可以简单的改变1为你支持的接口的数据数目，然后再后面列出这些接口，接口之间用逗号间隔。例如：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">NS_IMPL_ISUPPORTS2(classname, interface1, interface2)
+NS_IMPL_ISUPPORTSn(classname, interface1, ..., interfacen)</code></pre>
+<p><br>这些宏会自动为你添加&nbsp;nsISupports项目，所以你不需要向下面这样添加nsISupports接口：&nbsp;</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">NS_IMPL_ISUPPORTS2(classname, interface1, nsISupports)</code></pre>
+<p><br>仔细看看上面的例子。&nbsp;注意，它使用的是接口的名称，而不是接口的IID。&nbsp;在宏实现里，使用了NS_GET_ID()宏，从名称获取接口的IID。&nbsp;当一个接口由XPIDL生成，那么头文件里就包含了他们的IIDs申明。&nbsp;对于任何使用XPIDL生成的接口，你都可以使用NS_GET_IID()，获取他的IID。&nbsp;</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">// returns a reference to a shared nsIID object\
+static const nsIID iid1 = NS_GET_IID(nsISupports);
+
+// constructs a new nsIID object
+static const nsIID iid2 = NS_ISUPPORTS_IID;</code></pre>
+<p>&nbsp;</p>
+<p>为了使用NS_IMPL_ISUPPORTSn宏，你必须保证你的类有一个变量名为mRefCnt，类型为nsrefcnt的成员变量。&nbsp;我们的XPCOM也提供了例外的宏来申明它。</p>
+<h2>1.3&nbsp;申明宏</h2>
+<p>NS_DECL_NSISUPPORTS&nbsp;为你申明了AddRef,&nbsp;Release,和&nbsp;QueryInterface，也为你定义了&nbsp;NS_IMPL_ISUPPORTS.需要的mRefCnt变量。&nbsp;此外，NS_DECL_&nbsp;跟上任何接口名字的大写，那将为你申明接口的所有方法。&nbsp;例如，NS_DECL_NSIFOO将会为你申明nsIFoo接口提供的在nsIFoo.h（由XPIDL编译生成的头文件）的所有的方法。&nbsp;下面是一个真是的类：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">class myEnumerator : public nsISimpleEnumerator
+{
+  public:
+    NS_DECL_ISUPPORTS
+    NS_DECL_NSISIMPLEENUMERATOR
+
+    myEnumerator();
+    virtual ~myEnumerator() {}
+};</code></pre>
+<p>&nbsp;</p>
+<p>nsISimpleEnumerator&nbsp;类的申明里没有包含除了构造和祈构函数之外的其它任何方法。&nbsp;替代的，类使用了&nbsp;NS_DECL_&nbsp;宏申明nsISimpleEnumerator接口的所有方法。<br>使用这些宏不仅为你节约了大量的写代码的时间，它也为你节约了idl文件变化时，你需要更改头文件的时间。</p>
+<p>历史上还出现一个NS_INIT_ISUPPORTS宏，用于初始化你的类的&nbsp;mRefCnt成员为0。这个宏已经在&nbsp;Mozilla&nbsp;1.3里开始不再需要了。&nbsp;mRefCnt类型已经重一个整形变成了一个类，它会自动初始化。&nbsp;如果你编译的Mozilla版本早于1.3，你仍然需要这个宏。</p>
+<p>下面统计了在weblock.cpp里使用到的宏：</p>
+<p><strong>Common&nbsp;XPCOM&nbsp;Macros</strong></p>
+<figure class="table">
+  <table>
+    <tbody>
+      <tr>
+        <td>NS_IMPL_ISUPPORTSn</td>
+        <td>为给出的类实现nsISupports&nbsp;接口，并可提供数量为n的接口</td>
+      </tr>
+      <tr>
+        <td>NS_DECL_ISUPPORTS</td>
+        <td>申明nsISuppports接口的方法，包含了nRefCnt变量。</td>
+      </tr>
+      <tr>
+        <td>NS_INIT_ISUPPORTS</td>
+        <td>初始化nRefCnt为0，必须在类的构造函数里调用。</td>
+      </tr>
+      <tr>
+        <td>NS_GET_IID</td>
+        <td>返回给定名称的接口的IID。&nbsp;接口必须有XPIDL生成。</td>
+      </tr>
+    </tbody>
+  </table>
+</figure>
+<p>使用了上面的宏，&nbsp;Weblock组件的代码有340行减少到不足40行。&nbsp;代码更加清晰容易维护。&nbsp;使用了宏的源代码参见“weblock2.cpp”。</p>
+<h1>2.&nbsp;weblock2.cpp</h1>
+<p>下面是&nbsp;weblock1.cpp的宏实现版本：</p>
+<p><strong>weblock2.cpp</strong></p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">#include "nsIGenericFactory.h"
+#include "nsISupportsUtils.h"
+
+#define SAMPLE_CID \
+{ 0x777f7150, 0x4a2b, 0x4301, \
+{ 0xad, 0x10, 0x5e, 0xab, 0x25, 0xb3, 0x22, 0xaa}}
+
+class Sample: public nsISupports
+{
+  public:
+    Sample();
+    virtual ~Sample();
+
+    NS_DECL_ISUPPORTS
+};
+
+Sample::Sample()
+{
+  // note: in newer versions of Gecko (1.3 or later)
+  // you don't have to do this:
+  NS_INIT_ISUPPORTS();
+}
+
+Sample::~Sample()
+{
+
+}
+
+NS_IMPL_ISUPPORTS1(Sample, nsISupports);
+
+NS_GENERIC_FACTORY_CONSTRUCTOR(Sample);
+
+static const nsModuleComponentInfo components[] =
+{
+  { "Pretty Class Name",
+    SAMPLE_CID,
+    "@company.com/sample",
+    SampleConstructor
+  }
+};
+
+NS_IMPL_NSGETMODULE(nsSampleModule, components)</code></pre>
+<h1>3.&nbsp;XPCOM里的字符串类</h1>
+<p>字符串通常作为一个线性序列的字符集。在C++里，字符“XPCOM”有6个连续的字节组成，’X’字节偏移为0，null字符偏移为5。另一种宽字符串，使用两个字符表示一个字节，他们通常用于处理Unicode字符串。</p>
+<p>XPCOM的字符串类，不只限于null终止的字符序列。&nbsp;他们是相当的复杂，因为他们还要支持Gecko布局引擎和其他管理大数据块的子系统。&nbsp;此外，Mozilla的某些版本中的字符串类还支持把序列的字符串分解为多个片段（可能或不可能是null终止的片段）。</p>
+<p>XPCOM的字符串类都是由nsAString和nsACString两个抽象类的一个派生来的。&nbsp;前面的处理双字节字符集，后面的往往使用更加平常些（使用场景更多），但着两个类都定义了字符串的相关功能。&nbsp;你可以看见这些类在很多XPCOM接口中作为参数传递。&nbsp;我们会在下面的章节看看这些类。</p>
+<h2>3.1&nbsp;使用字符串</h2>
+<p>介绍所有的字符串类怎么工作，已经超出了本文章的描述范围，但是我们会给你展示Weblock组件里怎么使用字符串。&nbsp;你首先需要注意的是字符串类没有冻结，这就意味着，当你能够避免使用他们时，就不要使用。</p>
+<p>链接到一个完整的字符串库(.lib或者&nbsp;.a)到你的组件，可能让你的组件体积增加100k（在Windows下），这在很多情况下是不能接受的（参见<a href="https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/en/XPCOM_string_guide">XPCOM&nbsp;string&nbsp;guide</a>）。针对WebLock，使用字符串类只是用来封装已存在的字符串数据，用不着高级功能，我们其实只需要一个简单的有基础功能的字符串类。&nbsp;WebLock使用的字符串类，不需要追加、串联、搜索或者其他实际的工作，仅仅是对字符串数据的封装；它们只需要能够转换为char*类型，以便作为参数传递给nsACString的相关方法。</p>
+<h2>3.2&nbsp;nsEmbedString&nbsp;and&nbsp;nsEmbedCString</h2>
+<p>在本指南里使用的字符串类是nsEmbedString&nbsp;和&nbsp;nsEmbedCString，他们实现了nsAString和nsACString抽象类。&nbsp;下面的第一个例子展现了nsEmbedCString&nbsp;的用法，这里他作为不需要更改的字符串传递给某方法的nsACString&nbsp;类型参数。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">// in IDL: method(in ACString thing);
+
+char* str = "How now brown cow?";
+nsEmbedCString data(str);
+rv = object-&gt;Method(data);</code></pre>
+<p>下一个例子里，方法用于设置字符串的值，他可能用于返回最后查看的URL或者当前的用户名字。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp"> // in IDL:  attribute ACString data;
+nsEmbedCString data;
+method-&gt;GetData(data);
+
+// now to extract the data from the url class:
+const char* aStringURL = url.get();</code></pre>
+<p>&nbsp;</p>
+<p>注意，调用url.get()方法获得的sStringURL的值指向的内存指针是属于URL字符串对象的。&nbsp;如果你想要保持这个字符串数据，你需要自己创建此字符串的备份。</p>
+<p><strong>字符串大小</strong></p>
+<p>上面的例子展示了怎么使用单字节字符串类：nsEmbedCString。双字节版本的字符串类，nsEmbedString，拥有相同的功能函数，但是构造函数传入的是nsAString并且.get()返回的是PRUnichar*类型。&nbsp;注意PRUnichar是一个两个字节的值。在后面的章节，你将会看到使用这个版本的字符串类的例子。</p>
+<h1>4.&nbsp;智能指针</h1>
+<p>您目前为止看到的接口都有引用计数。&nbsp;如果漏掉了释放引用计数，会导对象不能被释放，如下面的代码演示，这可能会带来大问题。</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">{
+  nsISupports* value = nsnull;
+  object-&gt;method(&amp;value);
+  if (!value) return;
+
+  // ...
+   if (NS_FAILED(error))
+    return;   // &lt;------------ leaks |value|
+
+  //...
+  NS_RELEASE(value);  // release our reference
+}</code></pre>
+<p>&nbsp;</p>
+<p>如果你在释放引用计数之前就返回了，那么这会导致对象永远也不会被删除（出现泄露）。在上面的例子里，要修复这个问题只需要很小的改动，但是在实际的代码里，这可能发生在任何地方，你可能需要为找到这个问题花费巨大的时间。<br>那么有没有工具帮助我们在不使用它是能够为开发者自动处理引用计数呢。在XPCOM里这个工具就是nsCOMPtr，或者智能指针类，他会自动帮你处理引用计数的问题。&nbsp;下面是上面的代码的智能指针版本：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">{
+  nsCOMPtr&lt;nsISupports&gt; value;
+  object-&gt;method(getter_AddRefs(value));
+
+  if (!value) return;
+
+  // ...
+  if (NS_FAILED(error))
+    return;
+  // ...
+}</code></pre>
+<p>你可能不熟悉这种样式和语法，但是为了简化管理引用计数，绝对值得你去学习智能指针。nsCOMPtr&nbsp;是一个C++模板类，有着与原始指针相似的行为，可以比较、测试等等。&nbsp;当你把它传输进getter函数时，你需要做一些事，例如：如上面代码所示，你必须使用getter_AddRefs来封装这个变量。</p>
+<p>你不要对一个nsCOMPtr调用nsISupports的AddReg和Release方法。&nbsp;这个限制不是绝对的，你可以根据你的需求进行灵活处理，但是一定要小心：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">SomeClass::Get(nsISupports** aResult)
+{
+
+  if (!aResult)
+    return NS_ERROR_NULL_POINTER;
+
+  nsCOMPtr&lt;nsISupports&gt; value;
+  object-&gt;method(getter_AddRefs(value));
+
+  *aResult = value.get();
+  NS_IF_ADDREF(*aResult);
+  return NS_OK;
+}</code></pre>
+<p>首先，此方法不会是检查调用方传递地址的有效性。如果不是，它甚至不会尝试继续。下一步，它对推定为存在于此上下文中的对象调用另一个方法。可调用&nbsp;nsCOMPtr&nbsp;的.get()&nbsp;方法，并使它为使用作为原始指针返回。这个原始指针然后可以分配给一个变量，并已由&nbsp;NS_IF_ADDREF&nbsp;更新其引用。&nbsp;然而对.get()的结果要非常的小心。&nbsp;你应该永远不会对这一结果调用&nbsp;Release，因为它可能导致崩溃。相反，若要显式释放被&nbsp;nsCOMPtr封装的对象，您可以分配为该指针为零。智能指针的另一个不错的功能，您可以更容易的使用QueryInterface。例如，有两个接口来表示文件系统的文件，&nbsp;nsIFile&nbsp;和&nbsp;nsILocalFile，他们都由一个对象实现。虽然我们还没有正式介绍了这两个接口下,&nbsp;下面代码示例说明了这两个接口之间切换是多么简单：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">SomeClass::DoSomething(nsIFile* aFile)
+{
+
+  if (!aFile)
+    return NS_ERROR_NULL_POINTER;
+
+   nsresult rv;
+
+  nsCOMPtr&lt;nsILocalFile&gt; localFile = do_QueryInterface(aFile, &amp;rv);
+
+  // ...
+}</code></pre>
+<p>&nbsp;</p>
+<p>如果QueryInterface&nbsp;成功，localFile就非空，rv的值会被设置为NS_OK。如果失败，localFile为空，rv为被设置为相应的错误码。&nbsp;这里rv是可选参数。如果你不关心它，你可以不管。完整的智能指针功能清单，参见“<a href="http://www.mozilla.org/projects/xpcom/nsCOMPtr/">mozilla.org's&nbsp;nsCOMPtr&nbsp;documentation</a>”。<br><strong>Note:&nbsp;other-parts</strong></p>
+<p>1&nbsp;This&nbsp;section&nbsp;discusses&nbsp;the&nbsp;main&nbsp;parameters&nbsp;of&nbsp;this&nbsp;structure.&nbsp;For&nbsp;a&nbsp;complete&nbsp;listing&nbsp;of&nbsp;all&nbsp;available&nbsp;options&nbsp;you&nbsp;can&nbsp;look&nbsp;at&nbsp;the&nbsp;complete&nbsp;reference&nbsp;in&nbsp;the&nbsp;<a href="https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/en/XPCOM_API_Reference">XPCOM&nbsp;API&nbsp;Reference</a>.</p>
+<p><strong>Note:&nbsp;nsISupports-warning</strong></p>
+<p>2&nbsp;Note&nbsp;that&nbsp;NS_DECL_ISUPPORTS&nbsp;doesn't&nbsp;obey&nbsp;the&nbsp;general&nbsp;rule&nbsp;in&nbsp;which&nbsp;every&nbsp;interface&nbsp;has&nbsp;a&nbsp;declaration&nbsp;macro&nbsp;of&nbsp;the&nbsp;form&nbsp;NS_DECL_INTERFACENAME,&nbsp;where&nbsp;INTERFACENAME&nbsp;is&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;interface&nbsp;being&nbsp;compiled.</p>
+<p><strong>Note:&nbsp;nulls-in-strings</strong></p>
+<p>3&nbsp;The&nbsp;string&nbsp;classes&nbsp;may&nbsp;also&nbsp;support&nbsp;embedded&nbsp;nulls.</p>
+<p><strong>Note:&nbsp;other-string-classes</strong></p>
+<p>4&nbsp;There&nbsp;are&nbsp;other&nbsp;abstract&nbsp;string&nbsp;classes,&nbsp;but&nbsp;they&nbsp;are&nbsp;outside&nbsp;the&nbsp;scope&nbsp;of&nbsp;this&nbsp;book.</p>
+<p>​</p>

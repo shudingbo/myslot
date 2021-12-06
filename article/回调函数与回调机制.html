@@ -1,0 +1,104 @@
+<!--
+title: 回调函数 与 回调机制
+description: 回调函数 与 回调机制
+published: 1
+date: 2021-12-06T07:38:00.504Z
+tags: callback
+editor: ckeditor
+dateCreated: 2021-12-06T07:38:00.504Z
+-->
+
+<p><strong>回调函数 与 回调机制</strong></p>
+<p>&nbsp;</p>
+<h3><strong>1.&nbsp; 什么是回调函数</strong></h3>
+<p>&nbsp;&nbsp;&nbsp; 回调函数（callback Function），顾名思义，用于回调的函数。&nbsp; 回调函数只是一个功能片段，由用户按照回调函数调用约定来实现的一个函数。回调函数是一个工作流的一部分，由工作流来决定函数的调用（回调）时机。回调函数包含下面几个特性：</p>
+<ul>
+  <li>属于工作流的一个部分；</li>
+  <li>必须按照工作流指定的调用约定来申明（定义）；</li>
+  <li>他的调用时机由工作流决定，回调函数的实现者不能直接调用回调函数来实现工作流的功能；</li>
+</ul>
+<p>&nbsp;&nbsp;&nbsp;</p>
+<h3><strong>2. 回调机制</strong></h3>
+<p>&nbsp;&nbsp;&nbsp; 回调机制是一种常见的设计模型，他把工作流内的某个功能，按照约定的接口暴露给外部使用者，为外部使用者提供数据，或要求外部使用者提供数据。</p>
+<figure class="image"><img src="/cb.jpg"></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; 如上图所示，工作流提供了两个对外接口（获取参数、显示结果），以回调函数的形式实现。</p>
+<p>&nbsp;</p>
+<ul>
+  <li>“获取参数”回调函数，需要工作流使用者设定工作流计算需要的参数。</li>
+  <li>“显示结果”回调函数，提供计算结果给工作流使用者。</li>
+</ul>
+<p><br>&nbsp;&nbsp;&nbsp; 再以Windows的枚举顶级窗体为例。函数EnumWindows用于枚举当前系统中的所有顶级窗口，其函数原型为：<br>&nbsp;</p>
+<pre><code class="language-cpp"> &nbsp;&nbsp; BOOL EnumWindows( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ &nbsp;&nbsp; 	WNDENUMPROC lpEnumFunc, // callback function &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+ &nbsp;&nbsp; 	LPARAM lParam // application-defined value &nbsp;&nbsp; 
+ &nbsp;&nbsp; );</code></pre>
+<p><br><strong>&nbsp;&nbsp;&nbsp;&nbsp; </strong>其中<a href="http://docs.google.com/RawDocContents?docID=ddp4gt8c_28gk9kzdcg&amp;justBody=false&amp;revision=_latest&amp;timestamp=1198110021687&amp;editMode=true&amp;strip=true"><i>lpEnumFunc</i></a>是一个回调函数，他用于返回枚举过程中的获得的窗口的句柄。其定义约定为：<br>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<pre><code class="language-cpp">BOOL CALLBACK EnumWindowsProc( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	HWND hwnd, // handle to parent window &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	LPARAM lParam // application-defined value &nbsp;&nbsp; 
+);</code></pre>
+<p><br><br>&nbsp;&nbsp;&nbsp; 在这个例子中，EnumWindows 是一个工作流，这个工作流用于遍历windows的所有窗口并获得其句柄。用户使用EnumWindows工作流的目的是想通过工作流来来获取窗口的句柄以便针对特定的一个或多个窗口进行相关处理。 于是EnumWindows就扩展出接口<a href="http://docs.google.com/RawDocContents?docID=ddp4gt8c_28gk9kzdcg&amp;justBody=false&amp;revision=_latest&amp;timestamp=1198110021687&amp;editMode=true&amp;strip=true"><i>lpEnumFunc</i></a><i>，</i>用于返回遍历的窗口句柄。<br>&nbsp;&nbsp;&nbsp; EnumWindows工作流的结束有两个方式：1，用户在回调函数中返回FALSE；2，再也找不到顶级窗口。我们可以推测EnumWindows的实现机制如下：<br>&nbsp;&nbsp;&nbsp; <strong>注： 下列代码中的&nbsp; FindFirstTopWindows(), FindNextTopWindow()为假设的，Windows API 没有此函数，只是为了表明Enumwindows的内部流程。</strong><br><br>&nbsp;</p>
+<pre><code class="language-cpp"> &nbsp;&nbsp; BOOL EnumWindows(&nbsp;
+ &nbsp;&nbsp; 	WNDENUMPROC lpEnumFunc, // callback function
+ &nbsp;&nbsp; 	LPARAM lParam // application-defined value 
+ &nbsp;&nbsp; )
+ &nbsp;&nbsp; {
+ &nbsp;&nbsp; 	BOOL&nbsp; bRet = TRUE; 
+ &nbsp;&nbsp; 	HWND hWnd = ::FindFirstTopWindows();&nbsp; // 此函数是假设的，查找第一个顶级窗口
+ &nbsp;&nbsp; 	// 当hWnd为0时表示再也找不到顶级窗口
+ &nbsp;&nbsp; 	while( hWnd&nbsp; ){
+ &nbsp;&nbsp; 	bRet = (*lpEnumFunc)( hWnd, value );
+ &nbsp;&nbsp; 		if( !bRet)
+ &nbsp;&nbsp; 			break;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 终止EnumWindows工作流； 
+ &nbsp;&nbsp; 		hWnd = ::FindNextWindow();&nbsp;&nbsp;&nbsp; // 此函数是假设的，查找下一个顶级窗口
+ &nbsp;&nbsp; 	}
+ &nbsp;&nbsp; }</code></pre>
+<p><br><br><strong>&nbsp;</strong>&nbsp;&nbsp; 在EnumWindows(...)函数中，实现了窗口枚举的工作流，他通过回调机制把用户关心（顶级窗口句柄）的和枚举工作流分开，用户不需要知道EnumWindows的具体实现，用户只要知道，设定了<a href="http://docs.google.com/RawDocContents?docID=ddp4gt8c_28gk9kzdcg&amp;justBody=false&amp;revision=_latest&amp;timestamp=1198110021687&amp;editMode=true&amp;strip=true"><i>lpEnumFunc</i></a>&nbsp; 函数，然后把函数指针传给EnumWindwos就可以获得想要的窗口句柄。</p>
+<p>&nbsp;</p>
+<h3><strong>2.&nbsp; 回调机制应用</strong></h3>
+<p>&nbsp;&nbsp; 使用回调机制，可以为工作流实现扩展。 可以把工作流中需要用户干预的，或需要提供给用户的数据以回调的模式提供给用户。而用户不需要知道整个工作的流程，只需知道回调函数的说明就可以使用工作流模块提供的功能，这对信息的隐藏也是有作用的。</p>
+<p>&nbsp;</p>
+<h3>3. 回调机制的实现形式</h3>
+<ul>
+  <li>回调函数</li>
+  <li>虚拟函数</li>
+  <li>事件</li>
+</ul>
+<p><br>example: 以虚函数实现回调机制<br>&nbsp;</p>
+<pre><code class="language-cpp">​class CWorkFlow {
+	void init(){
+	 &nbsp;&nbsp;_a = 0;
+	 &nbsp;&nbsp;_b = 0;
+	}
+
+	int _a;
+	int _b;
+  public:
+    void Start()
+    {
+      init(); &nbsp;&nbsp;&nbsp;      //&nbsp; 初始化
+      Handle( a, b ); &nbsp;// 调用处理数据
+      Report( a, b ); &nbsp;// 报告结果
+    }
+
+    virtual void Handle( int &amp;a, int &amp;b ) = 0;
+    virtual void Report( int iRet) = 0;
+ };
+
+class CMain : public CWorkFlow {
+   public:
+     void Handle( int &amp;a, int &amp;b ) {
+      &nbsp;&nbsp;a = a + b/2;
+     }
+
+     void Report( int iRet) {
+      &nbsp;&nbsp;printf("iRet = %d/n", iRet);
+     }
+};
+
+// application
+int main(){
+ &nbsp; CMain main;
+ &nbsp; main.Start();
+}</code></pre>
+<p>&nbsp;</p>

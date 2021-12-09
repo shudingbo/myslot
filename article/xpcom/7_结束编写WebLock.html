@@ -2,26 +2,25 @@
 title: 7_结束编写WebLock
 description: 结束编写WebLock
 published: 1
-date: 2021-12-06T10:52:12.881Z
+date: 2021-12-09T06:27:26.725Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T10:52:12.881Z
 -->
 
-<p>​ (完整文章参见：<a href="http://www.yutools.com/wp/?p=106">XPCOM指南-7_结束编写WebLock</a>)</p>
-<p>注：&nbsp;本文部分翻译来自<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Finishing_the_Component">官网</a></p>
-<p>现在您已创建组件的大多数基础结构。&nbsp;该组件可以被XPCOM和类别管理器识别，那样在&nbsp;XPCOM初始化时，它就可以开启动。&nbsp;组件启动时，它会读取存储在本地文件系统里Url列表，填充到相应的二进制结构。</p>
-<h1><strong>1. Using&nbsp;Frozen&nbsp;Interfaces</strong></h1>
-<p>然而，现在阻止站点的核心功能仍然缺失。&nbsp;这个接口仍然没有冻结，组件开发人员需要讨论那些功能应该完全公开，所以API没有准备好发布。&nbsp;这让你处于和大多数使用Mozilla的开发者一样的境地—你想使用一些特定的功能，但是接口似乎天天都在变。</p>
-<p>&nbsp;</p>
-<p>所有的Mozilla的源代码是公开的，并且接口使用也很容易。&nbsp;抓一个合适的头文件，使用组件或者服务管理器访问你需要的接口和XPCOM对象，实现你将会在你的项目里实现的接口。&nbsp;这带来了很大的灵活性，当然你会失去一些兼容性。&nbsp;如果你使用没有冻结的“东西”，那个东西将来可能随着Gecko的版本变化而变化。</p>
-<p>如果你想你的组件能够对来自Gecko的变化免疫，你必须只使用已经冻结的接口和APIs。&nbsp;一般这会在接口申明上面的进行说明。&nbsp;例如，下面的nsIServiceManager：</p>
+<p>​&nbsp;</p>
+<p>现在您已创建组件的大多数基础结构。 该组件可以被XPCOM和类别管理器识别，那样在 XPCOM初始化时，它就可以开启动。 组件启动时，它会读取存储在本地文件系统里Url列表，填充到相应的二进制结构。</p>
+<h2><strong>Using Frozen Interfaces</strong></h2>
+<p>然而，现在阻止站点的核心功能仍然缺失。 这个接口仍然没有冻结，组件开发人员需要讨论那些功能应该完全公开，所以API没有准备好发布。 这让你处于和大多数使用Mozilla的开发者一样的境地—你想使用一些特定的功能，但是接口似乎天天都在变。</p>
+<p>所有的Mozilla的源代码是公开的，并且接口使用也很容易。 抓一个合适的头文件，使用组件或者服务管理器访问你需要的接口和XPCOM对象，实现你将会在你的项目里实现的接口。 这带来了很大的灵活性，当然你会失去一些兼容性。 如果你使用没有冻结的“东西”，那个东西将来可能随着Gecko的版本变化而变化。</p>
+<p>如果你想你的组件能够对来自Gecko的变化免疫，你必须只使用已经冻结的接口和APIs。 一般这会在接口申明上面的进行说明。例如，下面的nsIServiceManager：</p>
 <pre><code class="language-cpp">/**
  * The nsIServiceManager manager interface provides a means to obtain
  * global services in an application. The service manager depends
  * on the repository to find and instantiate factories to obtain
  * services.
  *
+
  * Users of the service manager must first obtain a pointer to the
  * global service manager by calling NS_GetServiceManager. After that,
  * they can request specific services by calling GetService.
@@ -33,8 +32,277 @@ dateCreated: 2021-12-06T10:52:12.881Z
  * @status FROZEN
  */</code></pre>
 <p>&nbsp;</p>
-<p>冻结的接口和函数时GECKO&nbsp;SDK的一部分。&nbsp;有一个经验，SDK外部的接口可当作是“实验性”的或者未冻结的。&nbsp;参见侧边拦的信息，它描述了冻结或未冻结的接口怎么影响你的软件开发，它还包括了接口变化会导致严重破坏的一些技术细节。</p>
+<p>冻结的接口和函数时GECKO SDK的一部分。 有一个经验，SDK外部的接口可当作是“实验性”的或者未冻结的。 参见侧边拦的信息，它描述了冻结或未冻结的接口怎么影响你的软件开发，它还包括了接口变化会导致严重破坏的一些技术细节。</p>
+<p>&nbsp;</p>
 <p><strong>使用未冻结接口的危险性</strong></p>
-<p><strong>---------</strong></p>
-<p><strong>更多内容参见：</strong><a href="http://www.yutools.com/wp/xpcom%e6%8c%87%e5%8d%97-7_%e7%bb%93%e6%9d%9f%e7%bc%96%e5%86%99weblock/"><strong>XPCOM指南-7_结束编写WebLock</strong></a></p>
-<p>​</p>
+<p>&nbsp;</p>
+<p>假设你在您的组件里使用了未冻结的接口，nsIFoo，这个接口在你测试时使用的那个版本的Gecko很正常。 然而在将来某个时候，nsIFoo有了重大变化，它的方法重新排序，添加，删除了一些。 此外，这个接口不应该被其它的Gecko或Mozilla客户使用，接口的维护人员也不知道有其它的开发者使用了这个接口，他并不会改变接口的IID。 当你的组件在此新版本的Gecko里运行时，你的方法调用将会通过不是你期望的虚表（v-table）路由，这将会产生一个不可预期的结果，甚至导致崩溃。</p>
+<p>&nbsp;</p>
+<p>看下面的图，组件编译时使用的nsIFoo接口有三个方法。 组件调用TestA方法，传入一个整数10。 这个可以在任何如编译时使用的相同版本的Gecko的应用上正常运行。 然而当nsIFoo接口发生了变化，TestA方法被删除了；虚表里的第一个函数现在成为了IsPrime()。 当组件调用TestA时，实际上它是调用的方法IsPrime。 不用说，这很不爽。 此外，还没有一种方式，容易的方式来发现这种类型的运行时错误。</p>
+<figure class="image"><img src="/pic/xpcom7-1.jpg"></figure>
+<p>&nbsp;</p>
+<p>Gecko的开发人员可以更改该接口的IID，和一些其它工作。这可以防止很多类似错误。但未冻结的接口不提供任何正式方式支持，和为接口的任何变化提供不同的IID接口并不是一个好主意。</p>
+<p>当使用冻结的接口，你就不用担心以后Gecko版本变化会带来兼容性问题。 唯一的问题是，编译器的变化，导致虚表的布局的变化，这种变化只在编译器的ABI变化是会发生。 例如，2002年的GCC 3.2改变了C++的ABI，这将会影响所有用GCC3.2编译的应用程序。 相应的问题在GCC 4.0时也发生过。</p>
+<p>&nbsp;</p>
+<p>在你使用未冻结的接口之前，你应该联系负责你使用的代码的开发者，问问他。 他们可能会建议你是否使用这个接口，或者建议你使用替代的方法，或者在代码更改时通知你。</p>
+<p>&nbsp;</p>
+<p>本项目，我们需要一个叫做nsIContentPolicy的接口。 在写本书的时候，这个接口正在接受审查。接口到达此状态时，意味着，模块的主人和同行正在讨论如何把此接口更好的公开。 通常这种标记的接口只会做细微的修改。 甚至这个接口被标记为“审计中”，然而，你打算使用此接口时，与负责人联系联系仍然是个好主意。</p>
+<p>&nbsp;</p>
+<h2><strong>Copying Interfaces into Your Build Environment</strong></h2>
+<p>在你的组件里获取和实现得接口不是Gecko的一部分，简单的，在Gecko SDK创建一个叫做 unfrozen的新路径。 从Gecko的源代码路径，<a href="http://mxr.mozilla.org/mozilla-central/source/content/base/public"><u>content/base/public</u></a>&nbsp;复制头文件和IDL文件到你新建的目录（对于WebLock组件，你所有需要的是nsIContentPolicy&nbsp;头文件和nsIContentPolicy.idl）。&nbsp;然后，与你创建Weblock.h的步骤相似，使用xpidl编译器从IDL文件创建头文件。 一旦你有了这个接口的头文件，你可以修改WebLock类实现nsIContentPolicy&nbsp;接口。 现在Weblock类支持4个接口：nsISupports, nsIObserver, nsIContentPolicy,&nbsp;和 iWeblock.</p>
+<figure class="image"><img src="/pic/xpcom7-2.jpg"></figure>
+<p><strong>WebLock Interfaces</strong></p>
+<figure class="table">
+  <table>
+    <tbody>
+      <tr>
+        <td style="padding:0cm 5.4pt;width:63.7pt;">Interface Name</td>
+        <td style="padding:0cm 5.4pt;width:44.05pt;">Defined by</td>
+        <td style="padding:0cm 5.4pt;width:44.5pt;">Status</td>
+        <td style="padding:0cm 5.4pt;width:280.1pt;">Summary</td>
+      </tr>
+      <tr>
+        <td style="padding:0cm 5.4pt;width:63.7pt;">nsISupports</td>
+        <td style="padding:0cm 5.4pt;width:44.05pt;">XPCOM</td>
+        <td style="padding:0cm 5.4pt;width:44.5pt;">Frozen</td>
+        <td style="padding:0cm 5.4pt;width:280.1pt;">Provides interface discovery, and object reference counting</td>
+      </tr>
+      <tr>
+        <td style="padding:0cm 5.4pt;width:63.7pt;">nsIObserver</td>
+        <td style="padding:0cm 5.4pt;width:44.05pt;">XPCOM</td>
+        <td style="padding:0cm 5.4pt;width:44.5pt;">Frozen</td>
+        <td style="padding:0cm 5.4pt;width:280.1pt;">Allows messaging passing between objects</td>
+      </tr>
+      <tr>
+        <td style="padding:0cm 5.4pt;width:63.7pt;">nsIContentPolicy</td>
+        <td style="padding:0cm 5.4pt;width:44.05pt;">Content</td>
+        <td style="padding:0cm 5.4pt;width:44.5pt;">Not Frozen</td>
+        <td style="padding:0cm 5.4pt;width:280.1pt;">Interface for policy control mechanism</td>
+      </tr>
+      <tr>
+        <td style="padding:0cm 5.4pt;width:63.7pt;">iWeblock</td>
+        <td style="padding:0cm 5.4pt;width:44.05pt;">Web Lock</td>
+        <td style="padding:0cm 5.4pt;width:44.5pt;">Not Frozen</td>
+        <td style="padding:0cm 5.4pt;width:280.1pt;">Enables and disables Weblock. Also, provides access to the URL that are whitelisted.</td>
+      </tr>
+    </tbody>
+  </table>
+</figure>
+<p>&nbsp;</p>
+<h2><strong>Implementing the nsIContentPolicy Interface</strong></h2>
+<p>实现新的接口，你必须 #include未冻结的nsIContentPolicy，你还必须保证编译系统可以找到它。 把它添加到你的编译系统吧。</p>
+<p>&nbsp;</p>
+<p>一旦你确认你的组件可以使用新的头文件进行编译，你必须从nsIContentPolicy接口派生你的类，定义类的时候，你可以在类公共申明里加入宏NS_DECL_NSICONTENTPOLICY，它提供了nsIContentPolicy的所有方法定义。 更新后的WebLock类如下所示：</p>
+<pre><code class="language-cpp">class WebLock: public nsIObserver, public iWeblock, public nsIContentPolicy
+{
+  public:
+    WebLock();
+    virtual ~WebLock();
+
+    NS_DECL_ISUPPORTS
+    NS_DECL_NSIOBSERVER
+    NS_DECL_IWEBLOCK
+    NS_DECL_NSICONTENTPOLICY
+
+  private:
+    urlNode* mRootURLNode;
+    PRBool&nbsp; mLocked;
+};</code></pre>
+<p>&nbsp;</p>
+<p>记住改变nsISupports实现宏，包含进nsIContentPolicy&nbsp;，这样Gecko的其它部分才知道WebLock支持nsIContentPolicy&nbsp;接口。</p>
+<p><code>NS_IMPL_ISUPPORTS3(WebLock, nsIObserver, iWeblock, nsIContentPolicy);</code></p>
+<p>&nbsp;</p>
+<h2><strong>Receiving Notifications</strong></h2>
+<p>为了能接收通知，你必须注册一个新的分类。 你已经注册了一个接收启动通知的分类。现在你要使用的分类名字叫做“content-policy”。 把WebLock组件添加到这个分类，修改WebLockRegistration&nbsp;回调函数，如下所示：</p>
+<pre><code class="language-cpp">static NS_METHOD WebLockRegistration(nsIComponentManager *aCompMgr,
+                                     nsIFile *aPath,
+                                     const char *registryLocation,
+                                     const char *componentType,
+                                     const nsModuleComponentInfo *info)
+{
+  nsresult rv;
+  nsCOMPtr&lt;nsIServiceManager&gt; servman = do_QueryInterface((nsISupports*)aCompMgr, &amp;rv);
+
+  if (NS_FAILED(rv))
+    return rv;
+
+  nsCOMPtr&lt;nsICategoryManager&gt; catman;
+ servman-&gt;GetServiceByContractID(NS_CATEGORYMANAGER_CONTRACTID,
+                                 NS_GET_IID(nsICategoryManager),
+                                  getter_AddRefs(catman));
+
+  if (NS_FAILED(rv))
+    return rv;
+
+  char* previous = nsnull;
+  rv = catman-&gt;AddCategoryEntry("xpcom-startup",
+                               "WebLock",
+                               WebLock_ContractID,
+                                PR_TRUE,
+                                PR_TRUE,
+                                &amp;previous);
+
+  if (previous)
+    nsMemory::Free(previous);
+
+  rv = catman-&gt;AddCategoryEntry("content-policy",
+                               "WebLock",
+                                WebLock_ContractID,
+                                PR_TRUE,
+                                PR_TRUE,
+                                &amp;previous);
+
+  if (previous)
+    nsMemory::Free(previous);
+  return rv;
+}</code></pre>
+<p>&nbsp;</p>
+<p>这段代码添加了主题为“content-policy”的新的分类入口点，它调用AddCategoryEntry&nbsp;，与<a href="https://developer.mozilla.org/en/Creating_XPCOM_Components/Starting_WebLock#Registering_for_Notifications"><u>Registering for Notifications</u></a>&nbsp;描述的方式一样。 注销也需要一个相似的步骤。</p>
+<p>&nbsp;</p>
+<h2><strong>Implementing the nsIContentPolicy</strong></h2>
+<p>现在，你可以把WebLock组件放入安装的Gecko环境下。 当组件被加载后，每次Web页面加载，Gecko会调用WebLcok里的nsIContentPolicy&nbsp;的实现，当load方法被调用时，它的返回的正确值会防止页面显示。</p>
+<p>我们要实现的web locking策略十分简单：对每个传入的load请求，我们将确认他的URI是否在“good” URLs列表里（白名单）。</p>
+<p>你可以扩展这个实现，从远端服务器获取这个白名单URLs列表，远程白名单适用于企业内部使用WebLock组件时，例如，Gecko有网络API支持这些操作。或者，你能够实现web lock用于替代禁止任何站点，组件将简单的记录所有读取的URLs。 在任何情况下，使用 XPCOM&nbsp;组件的过程是相同的。</p>
+<p>&nbsp;</p>
+<p>处理页面加载之前的检查方法，在我们的组件里只需要关心nsIContentPolicy 接口的函数ShouldLoad()的实现。 nsIContentPolicy&nbsp;的其它方法可以只禁止文档某些指定元素的加载，但我们的策略型更强：如果 URL&nbsp;不在白名单里，就阻止整个页面。WebLock&nbsp;组件中，ShouldLoad的实现如下所示：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">NS_IMETHODIMP WebLock::ShouldLoad(PRInt32 contentType,
+                                  nsIURI *contentLocation,
+                                  nsISupports *ctxt,
+                                  nsIDOMWindow *window,
+                                  PRBool *_retval)</code></pre>
+<p>&nbsp;</p>
+<h2><strong>Uniform Resource Locators</strong></h2>
+<p>这个方法传入一个nsIURL类型的接口指针，它基于统一资源标识符，或者URI。 这个类型的定义参见<a href="http://www.w3.org/"><u>World Wide Web Consortium</u></a>：</p>
+<ul>
+  <li>用于访问资源的机制的命名方案</li>
+  <li>承载资源的计算机的名称</li>
+  <li>资源的名称，作为路径给出</li>
+</ul>
+<p>在上下文中，URI是一个字符串，用于引用某个地方或web上的东西。 URI被叫做统一资源定位器或者URL。 关于 URIs和URLs的更多信息参见<a href="http://www.w3.org/TR/REC-html40/intro/intro.html"><u>intro to the HTML 4 specification</u></a>&nbsp;。</p>
+<p>&nbsp;</p>
+<p>Gecko把这些标识符封装到两个接口：nsIURI和你算IURL。 你可以在这两个几口之间调用QueryInterface。 网络库，Necko，当处理请求时，与这些接口交互。 当你想使用Necko下载一个文件时，例如，所有你提供的可能只有一个字符串，他就是表示文件的URI。当你把这个字符串传递给Necko时，他将创建一个对象，此对象至少实现了你算IURI接口（也许也实现了其它接口）。</p>
+<p>&nbsp;</p>
+<p>目前，WebLock实现ShouldLoad方法的机制就是把参数与白名单里的每一个字符串进行比较。 我们只应该对远程的URL做这种比较，因为我们不想阻止应用程序加载他所需要的本地资源，例如，直接通过 resource://协议获取本地文件。 如果这种类型的URIs被阻止，Gecko将不能启动，因此我们把对内容的限制策略只应用与HTTP和FTP协议。</p>
+<p>&nbsp;</p>
+<p>把从nsIURI提取的字符串与白名单里的字符串进行比较，这个工作需要你自己来实现，你可以逐个与nsIURI对象进行比较，如下面章节一样。 这可以确保URLs在比较之前是规范的。</p>
+<p>&nbsp;</p>
+<h2><strong>校验白名单（Checking the White List）</strong></h2>
+<p>WebLock的对于ShouldLoad方法的实现，开始于从传入的nsIURI里提取协议类型。 如果协议是“http”，“https”，或者“ftp”，它立即返回 true，将继续加载进程而不阻塞。</p>
+<p>&nbsp;</p>
+<p>WebLock将试着阻塞上面三种类型的URI。 当URI是他们中的一种时，它会遍历链接列表，并且会为列表里的每一个URL字符串创建一个新的nsIURI对象。 从每个对象里提取host与URI进行比较。 如果匹配，组件允许继续加载，返回true。 如果不匹配，组件返回false，阻止加载。</p>
+<p>&nbsp;</p>
+<h2><strong>URI Caching</strong></h2>
+<p>缓存URI将会让这个方法实现更快，因为可以避免更多对象的创建和销毁。这里指出了XPCOM的一个重要缺点，你不能在栈上创建对象。</p>
+<p>&nbsp;</p>
+<p>在紧凑的循环中创建这么多对象，没有问题，如果保持URL的内存缓存在对象的生命周期里是有效的。 但是，无论怎么优化实现内存的使用，每个XPCOM对象的创建都会产生一次堆分配。</p>
+<p>&nbsp;</p>
+<p>与URL类型（ "http", "https",&nbsp;和"ftp"）的字符串比较如下所示：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">nsEmbedCString scheme;
+contentLocation-&gt;GetScheme(scheme);
+
+if (strcmp("http", scheme.get())&nbsp;!= 0 &amp;&amp;
+    strcmp("https", scheme.get()) != 0 &amp;&amp;
+    strcmp("ftp", scheme.get())&nbsp;  != 0)
+{
+  // this isn't a type of URI that we deal with. 
+  *_retval = PR_TRUE; 
+  return NS_OK; 
+}</code></pre>
+<p>&nbsp;</p>
+<h2><strong>Creating nsIURI Objects</strong></h2>
+<p>使用nsIIOService创建一个你算URI。 nsIIOService&nbsp;是网络库“necko”的一部分，它负责关闭网络请求，管理如http，ftp或file这些协议，并且创建nsIURIs。 Necko&nbsp;提供了巨大的网络功能，但是WebLock组件只用到了创建nsIURI对象的功能。</p>
+<p>&nbsp;</p>
+<p>使用 服务管理器获取nsIIOService。这个对象将会在组件的整个生命周期里使用，需要缓存下来。一个获取nsIIOService&nbsp;的地方是Observe()方法，里面已经有了一个服务管理器的指针。 获取代码如下所示：</p>
+<pre><code class="language-cpp">// Get a pointer to the IOService
+rv = servMan-&gt;GetServiceByContractID("@mozilla.org/network/io-service;1",
+                                    NS_GET_IID(nsIIOService),
+                             &nbsp;       getter_AddRefs(mIOService));</code></pre>
+<p>一旦你获取了接口指针，你可以很容易从一个字符串创建nsIURI对象，代码片段如下所示：</p>
+<p>&nbsp;</p>
+<pre><code class="language-cpp">nsCOMPtr&lt;nsIURI&gt; uri;
+nsEmbedCString urlString(node-&gt;urlString);
+mIOService-&gt;NewURI(urlString,
+                   nsnull,
+                   nsnull,
+                   getter_AddRefs(uri));</code></pre>
+<p>&nbsp;</p>
+<p>这段代码使用nsEmbedCString封装了一个C字符串，也许你还记得Gecko APIs有很多关于字符串的泪。 关于字符串的更多信息参见<a href="https://developer.mozilla.org/en/Creating_XPCOM_Components/Using_XPCOM_Utilities_to_Make_Things_Easier#String_Classes_in_XPCOM"><u>String Classes in XPCOM</u></a>&nbsp;。</p>
+<p>&nbsp;</p>
+<p>一旦URL字符串封装到nsEmbedCString，它就可以传递给方法 NewURI。 这个方法解析传入的字符串然后创建一个实现了nsIURI接口的对象。 传递给NewURI的两个nsnull参数分别用于指定字符串的字符集和any base URI to use,。 我们假设这里的URL字符串的字符集是<a href="https://developer.mozilla.org/en/UTF-8"><u>UTF-8</u></a>，还假设每个URL字符串是绝对的。 关于相对URLs的更多信息，参见<a href="http://www.w3.org/TR/REC-html40/intro/intro.html"><u>intro to the HTML 4 specification</u></a>。</p>
+<p>下面是ShouldLoad()方法的完整实现：</p>
+<pre><code class="language-cpp">NS_IMETHODIMP
+WebLock::ShouldLoad(PRInt32 contentType,
+                    nsIURI *contentLocation,
+                    nsISupports *ctxt,
+                    nsIDOMWindow *window,
+                    PRBool *_retval)
+{
+  if (!contentLocation)
+    return NS_ERROR_FAILURE;
+
+  nsEmbedCString scheme;
+  contentLocation-&gt;GetScheme(scheme);
+
+  if (strcmp("http", scheme.get())&nbsp; != 0 &amp;&amp;
+      strcmp("https", scheme.get()) != 0 &amp;&amp;
+      strcmp("ftp",&nbsp; scheme.get())&nbsp;!= 0)
+  {
+    // this isn't a type of URI that we deal with
+    *_retval = PR_TRUE;
+    return NS_OK;
+  }
+
+  nsEmbedCString hostToLoad;
+  contentLocation-&gt;GetHost(hostToLoad);
+
+  // Assume failure.&nbsp; Do not allow this nsIURI to load.
+  *_retval = PR_FALSE;
+  nsresult rv;
+
+  nsCOMPtr&lt;nsIServiceManager&gt; servMan;
+  rv = NS_GetServiceManager(getter_AddRefs(servMan));
+
+  if (NS_FAILED(rv)) 
+    return rv;
+
+  nsCOMPtr&lt;nsIIOService&gt; mIOService;
+  // Get a pointer to the IOService
+  rv = servMan-&gt;GetServiceByContractID("@mozilla.org/network/io-service;1",
+                                      NS_GET_IID(nsIIOService),
+                                      getter_AddRefs(mIOService));
+
+  if (NS_FAILED(rv))
+    return rv;
+
+  urlNode* node = mRootURLNode;
+  PRBool match = PR_FALSE;
+
+  while (node)
+  {
+    nsCOMPtr&lt;nsIURI&gt; uri;
+    nsEmbedCString urlString(node-&gt;urlString);
+    rv = mIOService-&gt;NewURI(urlString, nsnull,&nbsp; nsnull, getter_AddRefs(uri));
+
+    // if anything bad happens, just abort
+    if (NS_FAILED(rv))
+      return rv;
+
+    nsEmbedCString host;
+    uri-&gt;GetHost(host);
+
+    if (strcmp(hostToLoad.get(), host.get()) == 0)
+    {
+      // match found.&nbsp; Allow this nsIURI to load
+      *_retval = PR_TRUE;
+      return NS_OK;
+    }
+    node = node-&gt;next;
+  }
+
+  return NS_OK;
+}</code></pre>
+<p>&nbsp;</p>
+<p>现在，所有的后端的工作都完成了。 你当然可以把这些工作做一些提升，但本章只是介绍介绍创建基本的“浏览器辅助对象”。下一章将会介绍如何把这些与前端绑到一起—具体说来，就是如何使用XPConnect和用户界面中的JavaScript来访问和控制组件。</p>
+<p>&nbsp;</p>

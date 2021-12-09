@@ -2,28 +2,28 @@
 title: 8_编写WebLock界面
 description: 编写WebLock界面
 published: 1
-date: 2021-12-06T10:55:08.252Z
+date: 2021-12-09T06:42:10.439Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T10:55:08.252Z
 -->
 
-<p>​</p>
-<p>编写组件的UI</p>
+<p style="text-align:center;"><span class="text-big">​编写组件的UI</span></p>
 <p>&nbsp;</p>
 <p>到目前为止我们建立了一个可以安装到Gecko应用中的组件。你所使用的XPCOM接口和工具是通用的跨平台的，可以被Gecko&nbsp;Runtime&nbsp;Environment或者任何Mozilla1.2以后任何基于Gecko的应用（这时GRE已经可用）。&nbsp;</p>
 <p>&nbsp;</p>
 <p>本章，我们将建立WebLock组件的用户接口，这就意味着添加到&nbsp;现有的&nbsp;Mozilla&nbsp;浏览器<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Building_the_WebLock_UI#endnote_other-mozlike-browsers">[other-mozlike-browsers]</a>.&nbsp;他使用&nbsp;XUL,&nbsp;这是一个Gecko知道如何呈现用户界面的XML语言,&nbsp;同时它也跟特定的Mozilla用户界面交互,&nbsp;为此它要把自己作为UI的扩展安装起来。特别是，我们在本章编写的用户界面会叠加到浏览器组件的状态栏，它提供了一个小图标，用户可以通过点击它访问weblock接口。</p>
 <p>&nbsp;</p>
 <p>WebLock&nbsp;Indicator&nbsp;in&nbsp;Browser</p>
-<p>&nbsp;</p>
+<figure class="image"><img src="/pic/xpcom4-1.png"></figure>
 <h1><strong>1.&nbsp;User&nbsp;Interface&nbsp;Package&nbsp;List</strong></h1>
 <p>本章所描述的用户界面包括4个文件:&nbsp;</p>
-<p>&nbsp;</p>
-<p>·&nbsp;webLockOverlay.xulis&nbsp;这个文件定义了叠加到浏览器的图标的状态</p>
-<p>·&nbsp;weblock.xuldefines&nbsp;the&nbsp;web&nbsp;lock&nbsp;管理器对话框.</p>
-<p>·&nbsp;weblock.cssprovides&nbsp;&nbsp;所有XUL文本的CSS样式</p>
-<p>·&nbsp;weblock.jsprovides&nbsp;&nbsp;所有XUL文件使用到的JavaScript函数</p>
+<ul>
+  <li>webLockOverlay.xulis&nbsp;这个文件定义了叠加到浏览器的图标的状态</li>
+  <li>weblock.xuldefines&nbsp;the&nbsp;web&nbsp;lock&nbsp;管理器对话框.</li>
+  <li>weblock.cssprovides&nbsp;&nbsp;所有XUL文本的CSS样式</li>
+  <li>weblock.jsprovides&nbsp;&nbsp;所有XUL文件使用到的JavaScript函数</li>
+</ul>
 <p>&nbsp;</p>
 <p>下面章节描述每个文件的功能。下一章回描述你怎么使用这些文件创建一个包，一个包含了WeLock组件和UI的安装归档。</p>
 <p>&nbsp;</p>
@@ -35,52 +35,50 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>&nbsp;</p>
 <p>首先，当组件加载后尽快的展示他的基本状态是很重要的。&nbsp;如同安全网页图标，weblock图标放在browser右下角，提示browser是否当前是锁定的。&nbsp;WebLock组件的初始状态总是unlock，我们需要一些客户代码（接口中的JavaScript代码）来表达并跟踪用户操作iWebLock接口的状态。一个boolean型变量：wLocked&nbsp;就可以完成这个工作：&nbsp;</p>
 <p>&nbsp;</p>
-<p>//&nbsp;initialize&nbsp;the&nbsp;wLocked&nbsp;variable&nbsp;as&nbsp;unlocked</p>
-<p>var&nbsp;wLocked&nbsp;=&nbsp;0;</p>
+<p><code>//&nbsp;initialize&nbsp;the&nbsp;wLocked&nbsp;variable&nbsp;as&nbsp;unlocked</code></p>
+<p><code>var&nbsp;wLocked&nbsp;=&nbsp;0;</code></p>
 <p>&nbsp;</p>
 <p>这个函数被用户界面调用并且调用被传递到WebLock组件的lock和unlock函数，我们也需要对组件里的相应变量做出调整：</p>
-<p>&nbsp;</p>
-<p>function&nbsp;wLock()</p>
-<p>{</p>
-<p>&nbsp;&nbsp;//&nbsp;check&nbsp;to&nbsp;see&nbsp;if&nbsp;locking&nbsp;is&nbsp;on&nbsp;or&nbsp;off</p>
-<p>&nbsp;&nbsp;weblock.lock();</p>
-<p>&nbsp;&nbsp;wLocked&nbsp;=&nbsp;1;</p>
-<p>}</p>
-<p>&nbsp;</p>
-<p>function&nbsp;wUnLock()</p>
-<p>{</p>
-<p>&nbsp;&nbsp;//&nbsp;check&nbsp;to&nbsp;see&nbsp;if&nbsp;locking&nbsp;is&nbsp;on&nbsp;or&nbsp;off</p>
-<p>&nbsp;&nbsp;weblock.unlock();</p>
-<p>&nbsp;&nbsp;wLocked&nbsp;=&nbsp;0;</p>
-<p>}</p>
+<pre><code class="language-javascript">function&nbsp;wLock()
+{
+ &nbsp;//&nbsp;check&nbsp;to&nbsp;see&nbsp;if&nbsp;locking&nbsp;is&nbsp;on&nbsp;or&nbsp;off
+ &nbsp;weblock.lock();
+ &nbsp;wLocked&nbsp;=&nbsp;1;
+}
+
+
+function&nbsp;wUnLock()
+{
+ &nbsp;//&nbsp;check&nbsp;to&nbsp;see&nbsp;if&nbsp;locking&nbsp;is&nbsp;on&nbsp;or&nbsp;off
+ &nbsp;weblock.unlock();
+ &nbsp;wLocked&nbsp;=&nbsp;0;
+}</code></pre>
 <p>&nbsp;</p>
 <p>An&nbsp;important&nbsp;preliminary&nbsp;of&nbsp;these&nbsp;functions&nbsp;is&nbsp;that&nbsp;the&nbsp;WebLock&nbsp;component&nbsp;be&nbsp;made&nbsp;available&nbsp;to&nbsp;the&nbsp;JavaScript&nbsp;in&nbsp;the&nbsp;form&nbsp;of&nbsp;the&nbsp;weblock&nbsp;object&nbsp;being&nbsp;used&nbsp;in&nbsp;the&nbsp;snippets&nbsp;above.&nbsp;As&nbsp;you&nbsp;can&nbsp;see,&nbsp;weblock&nbsp;is&nbsp;initialized&nbsp;as&nbsp;a&nbsp;global&nbsp;JavaScript&nbsp;variable,&nbsp;available&nbsp;in&nbsp;the&nbsp;scope&nbsp;of&nbsp;these&nbsp;functions&nbsp;and&nbsp;others:</p>
 <p>使用这些函数的重要前提是WebLock&nbsp;组能够在JavaScript里使用，就像上面的代码片段里的weblock对象一样。&nbsp;正如你所看见，weblock被初始化为一个Javascript全局变量，那样他就可以在这些函数里使用了：&nbsp;</p>
 <p>&nbsp;</p>
-<p>var&nbsp;weblock&nbsp;=&nbsp;Components.classes["@dougt/weblock"]</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.getService()</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.QueryInterface(Components.interfaces.iWebLock);&nbsp;</p>
+<pre><code class="language-javascript">var&nbsp;weblock&nbsp;=&nbsp;Components.classes["@dougt/weblock"]
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.getService()
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.QueryInterface(Components.interfaces.iWebLock); </code></pre>
 <p>&nbsp;</p>
 <p>你还必须编写JavaScript代码，通过AddSite方法把新的站点加入白名单。&nbsp;这个有点复杂，因为它需要你与当前页面交互，或提供另外的用户界面（例如，一个编辑框，允许在其中输入任意的URL）用于输入指定的URL。&nbsp;在XUL那一节，我们将描述用户界面是如何定义的。&nbsp;这一节描述如何调用接口的函数和他们怎么与WebLock组件进行交互。</p>
 <p>&nbsp;</p>
 <p>AddSite方法期望的URL实际上就是一个字符串，所以我们直接通过用户界面传入一个字符串，或者我们可以对字符串的有效性进行验证（是否有效的URL）。我在本指南里只聚焦于WebLock的功能（而不是UI），我们假设从界面获得的字符串是有效的，可直接加入白名单：</p>
 <p>&nbsp;</p>
-<p>function&nbsp;addThisSite()</p>
-<p>{</p>
-<p>&nbsp;&nbsp;var&nbsp;tf&nbsp;=&nbsp;document.getElementById("dialog.input");</p>
-<p>&nbsp;&nbsp;//&nbsp;weblock&nbsp;is&nbsp;global&nbsp;and&nbsp;declared&nbsp;above</p>
-<p>&nbsp;&nbsp;weblock.AddSite(tf.value);</p>
-<p>}</p>
+<pre><code class="language-javascript">function&nbsp;addThisSite()
+{
+ &nbsp;var&nbsp;tf&nbsp;=&nbsp;document.getElementById("dialog.input");
+ &nbsp;//&nbsp;weblock&nbsp;is&nbsp;global&nbsp;and&nbsp;declared&nbsp;above
+ &nbsp;weblock.AddSite(tf.value);
+}</code></pre>
 <p>&nbsp;</p>
 <p>此JavaScript函数可直接被XUL构件调用，输入字符串通过textbox&nbsp;元素的属性value获取。.&nbsp;</p>
-<p>&nbsp;</p>
 <p>你还需要建立一个函数，当用户点击WebLock&nbsp;图标的时候可以显示WebLock&nbsp;窗口。&nbsp;这个函数使用window对象的openDIalog方法，方法有一个参数，此参数为定义对话框的XUL文件的URL：&nbsp;</p>
 <p>&nbsp;</p>
-<p>function&nbsp;loadWebLock()</p>
-<p>{</p>
-<p>&nbsp;&nbsp;window.openDialog("chrome://weblock/weblock.xul");</p>
-<p>}</p>
-<p>&nbsp;</p>
+<pre><code class="language-javascript">function&nbsp;loadWebLock()
+{
+ &nbsp;window.openDialog("chrome://weblock/weblock.xul");
+}</code></pre>
 <h1><strong>3.&nbsp;XUL</strong></h1>
 <p>Mozilla使用XUL（文件使用XML语言）来定义它的应用的用户界面，浏览器，邮件客户端，IRC客户端等等，都是使用XUL来定义整个用户界面。&nbsp;XUL标记里的元素映射为用户界面里的构件，他们由Gecko渲染显示&nbsp;-&nbsp;因此，对一个实例，应用程序窗口的根元素的标记为&lt;window/&gt;，对话框的根元素为&lt;dialog/&gt;。&nbsp;在XUL文件内部，&nbsp;&lt;button/&gt;,&nbsp;&lt;menu/&gt;,&nbsp;和&lt;checkbox/&gt;这些元素能够挂接到一个事件模型，挂接到脚本，挂接到能够执行大量浏览器功能的XPCOM接口。</p>
 <p>&nbsp;</p>
@@ -88,17 +86,14 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>在前一节中，我们概述了JavaScript与WebLock组件怎么进行交互。在本节中，我们将要创建的XUL界面，当用户同他交互时，它调用相应的JavaScript方法，实现功能。</p>
 <h2><strong>3.1&nbsp;The&nbsp;XUL&nbsp;Document</strong></h2>
 <p>创建实际的XUL文件要做的首要事情是，在其中定义对话框的用户界面和定义与Web&nbsp;locking初始化交互的事件。&nbsp;在XUL文档顶端，紧跟在XML申明后的根元素通常是&lt;window/&gt;，但是对于对话框这个元素是&lt;dialog/&gt;。这个XUL看起来如下所示：</p>
-<p>&nbsp;</p>
-<p>&lt;?xml&nbsp;version="1.0"?&gt;</p>
-<p>&lt;?xml-stylesheet&nbsp;href="chrome://global/skin/"&nbsp;type="text/css"?&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;dialog&nbsp;id="weblock_ui"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"&nbsp;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;title="Web&nbsp;Lock&nbsp;Manager"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;persist="screenX&nbsp;screenY"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;screenX="24"&nbsp;screenY="24"&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;/dialog&gt;</p>
+<pre><code class="language-xml">&lt;?xml&nbsp;version="1.0"?&gt;
+&lt;?xml-stylesheet&nbsp;href="chrome://global/skin/"&nbsp;type="text/css"?&gt;
+&lt;dialog&nbsp;id="weblock_ui"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;title="Web&nbsp;Lock&nbsp;Manager"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;persist="screenX&nbsp;screenY"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;screenX="24"&nbsp;screenY="24"&gt;
+&lt;/dialog&gt;</code></pre>
 <p>&nbsp;</p>
 <p>注意这部分XUL文件也包含了样式申明，倒入CSS规则并把规则应用到界面的细节部分。在Gecko里，CSS&nbsp;被用来几乎控制所有的XUL界面表现&nbsp;-&nbsp;颜色，位置，样式和一些扩展行为。&nbsp;Web&nbsp;lock管理对话框基于标准对话框，所以你可以使用一个单一的申明，因此它可以从浏览器导入“global”皮肤，并把它应用到weblock.xul里定义的构件上。</p>
 <p>&nbsp;</p>
@@ -106,66 +101,62 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>注意，这个文件包含了当用户/管理员点击web&nbsp;locking&nbsp;icon的时候弹出的对话框。这部分UI&nbsp;-&nbsp;需要动态地装载到Mozilla&nbsp;runtime&nbsp;-&nbsp;在<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Building_the_WebLock_UI#Overlaying_New_User_Interface_Into_Mozilla">Overlaying&nbsp;New&nbsp;User&nbsp;Interface&nbsp;Into&nbsp;Mozilla</a>描述&nbsp;。</p>
 <p>最终的对话框看起来如下所示：</p>
 <p>&nbsp;</p>
-<p>Web&nbsp;Lock&nbsp;Manager&nbsp;Dialog</p>
+<figure class="image"><img src="/pic/xpcom8-1.jpg">
+  <figcaption>Web&nbsp;Lock&nbsp;Manager&nbsp;Dialog</figcaption>
+</figure>
 <p>&nbsp;</p>
 <p>如你所见，这个界面很简单，只提供了最基本的构件。&nbsp;完整的web&nbsp;lock管理器对话框的XUL文件参见下面定义的weblock.xul&nbsp;。</p>
 <h2><strong>3.2&nbsp;The&nbsp;Locking&nbsp;UI</strong></h2>
 <p>我们使用Radio&nbsp;Buttons来让用户选择web&nbsp;lock状态，就像上图显示的那样。在XUL里&lt;radio/&gt;元素被包含在&lt;radiogroup/&gt;父元素里。&nbsp;它让用户只能选择radiogroup里的一个radio，不能多选。</p>
 <p>Web&nbsp;lock&nbsp;管理器里的radiogroup构件的定义如下所示：</p>
-<p>&nbsp;</p>
-<p>&lt;radiogroup&gt;&nbsp;</p>
-<p>&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="lock"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="unlock"&nbsp;selected="true"/&gt;</p>
-<p>&lt;/radiogroup&gt;</p>
+<pre><code class="language-xml">&lt;radiogroup&gt; 
+ &nbsp;&nbsp;&lt;radio&nbsp;label="lock"/&gt;
+ &nbsp;&nbsp;&lt;radio&nbsp;label="unlock"&nbsp;selected="true"/&gt;
+&lt;/radiogroup&gt;</code></pre>
 <p>&nbsp;</p>
 <p>WebLock组件的启动初始化状态总是&nbsp;unlocked，所以你可以为unlock&nbsp;radio按钮增加&nbsp;selected属性，并赋值为true（selected="true"&nbsp;）。</p>
 <h2><strong>3.3&nbsp;Site&nbsp;Adding&nbsp;UI</strong></h2>
 <p>下一步是创建让你新建站点到白名单的界面。&nbsp;也许你想加入一些界面让你能够查看白名单或者想列表那样编辑他。&nbsp;在本指南我们只提供简单的添加功能，输入一个字符串，传输它到AddSite&nbsp;API。</p>
-<p>&nbsp;</p>
-<p>&lt;separator&nbsp;class="thin"/&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;hbox&nbsp;align="center"&gt;</p>
-<p>&nbsp;&nbsp;&lt;textbox&nbsp;id="url.input"&nbsp;flex="1"/&gt;</p>
-<p>&nbsp;&nbsp;&lt;button&nbsp;label="Add&nbsp;this&nbsp;URL"&nbsp;oncommand="addThisSite();"/&gt;</p>
-<p>&lt;/hbox&gt;&nbsp;</p>
+<pre><code class="language-xml">&lt;separator&nbsp;class="thin"/&gt;
+&lt;hbox&nbsp;align="center"&gt;
+ &nbsp;&lt;textbox&nbsp;id="url.input"&nbsp;flex="1"/&gt;
+ &nbsp;&lt;button&nbsp;label="Add&nbsp;this&nbsp;URL"&nbsp;oncommand="addThisSite();"/&gt;
+&lt;/hbox&gt; </code></pre>
 <p>&nbsp;</p>
 <p>上面片段展示了XUL里的布局控件。&nbsp;separator&nbsp;创建一个小的隔离控件。&nbsp;Textbox用于用户输入URL，他的父控件&lt;hbox/&gt;，是一个水平布局控件-&nbsp;控制它的子控件的渲染方式，这里&lt;hbox/&gt;表示他的子控件在水平方向排列布局（当然也存在&lt;&lt;vbox/&gt;，他的子控件在垂直方向布局）。&nbsp;</p>
 <p>&nbsp;</p>
 <p>注意，当按钮被点击是，后面的会调用JavaScript函数：addThisSite()，函数在weblock.js&nbsp;里定义，参见上面的Client&nbsp;Code&nbsp;Overview&nbsp;。</p>
 <h2><strong>3.4&nbsp;weblock.xul</strong></h2>
 <p>&nbsp;</p>
-<p>&lt;?xml&nbsp;version="1.0"?&gt;</p>
-<p>&lt;?xml-stylesheet&nbsp;href="chrome://global/skin/"&nbsp;type="text/css"?&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;dialog&nbsp;id="weblock_mgg"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;title="Web&nbsp;Lock&nbsp;Manager"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;style="width:&nbsp;30em;"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;persist="screenX&nbsp;screenY"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;screenX="24"&nbsp;screenY="24"&gt;</p>
-<p>&nbsp;</p>
-<p>&nbsp;&nbsp;&lt;script&nbsp;src="chrome://weblock/content/weblock.js"/&gt;</p>
-<p>&nbsp;</p>
-<p>&nbsp;&nbsp;&lt;hbox&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&lt;separator&nbsp;orient="vertical"&nbsp;class="thin"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&lt;vbox&nbsp;flex="1"&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;separator&nbsp;class="thin"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;hbox&nbsp;align="center"&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;textbox&nbsp;id="dialog.input"&nbsp;flex="1"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;button&nbsp;label="Add&nbsp;this&nbsp;URL"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oncommand="addThisSite();"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/hbox&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;hbox&nbsp;align="center"&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radiogroup&nbsp;οnchange="toggleLock();"&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="lock"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="unlock"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/radiogroup&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;spacer&nbsp;flex="1"/&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/hbox&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&lt;/vbox&gt;</p>
-<p>&nbsp;&nbsp;&lt;/hbox&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;/dialog&gt;&nbsp;</p>
+<pre><code class="language-xml">&lt;?xml&nbsp;version="1.0"?&gt;
+&lt;?xml-stylesheet&nbsp;href="chrome://global/skin/"&nbsp;type="text/css"?&gt;
+
+&lt;dialog&nbsp;id="weblock_mgg"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+ &nbsp;&nbsp;&nbsp;title="Web&nbsp;Lock&nbsp;Manager"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;style="width:&nbsp;30em;"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;persist="screenX&nbsp;screenY"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;screenX="24"&nbsp;screenY="24"&gt;
+ &nbsp;&lt;script&nbsp;src="chrome://weblock/content/weblock.js"/&gt;
+ &nbsp;&lt;hbox&gt;
+ &nbsp;&nbsp;&nbsp;&lt;separator&nbsp;orient="vertical"&nbsp;class="thin"/&gt;
+ &nbsp;&nbsp;&nbsp;&lt;vbox&nbsp;flex="1"&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;separator&nbsp;class="thin"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;hbox&nbsp;align="center"&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;textbox&nbsp;id="dialog.input"&nbsp;flex="1"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;button&nbsp;label="Add&nbsp;this&nbsp;URL"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oncommand="addThisSite();"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/hbox&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;hbox&nbsp;align="center"&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radiogroup&nbsp;οnchange="toggleLock();"&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="lock"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;radio&nbsp;label="unlock"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/radiogroup&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;spacer&nbsp;flex="1"/&gt;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/hbox&gt;
+ &nbsp;&nbsp;&nbsp;&lt;/vbox&gt;
+ &nbsp;&lt;/hbox&gt;
+&lt;/dialog&gt; </code></pre>
 <p>&nbsp;</p>
 <h1><strong>4.&nbsp;Overlaying&nbsp;New&nbsp;User&nbsp;Interface&nbsp;Into&nbsp;Mozilla</strong></h1>
 <p>你已经有了一个可以跟WebLock组件交互的对话框,&nbsp;但是你怎么把它装到browser中?&nbsp;然后你怎么访问它呢?&nbsp;当安装和准备好以后，WebLock&nbsp;组件已经可以用了：XPCOM发现它把它添加到已注册组件列表里，然后WebLock组件观察到XPCOM启动事件并初始化自己。&nbsp;</p>
@@ -175,27 +166,23 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>XUL定义了一个新的小图标：这个小图标用来调用JavaScript函数，加载我们前面定义的weblock.xul&nbsp;文件。这个图标实际上是一个单独的&lt;statusbarpanel/&gt;元素，获取叠加到主浏览器，以及一些JavaScript&nbsp;和一些&nbsp;CSS，&nbsp;控制元素的行为和外观的元素。&nbsp;这些全部在XUL文件里：</p>
 <p>&nbsp;</p>
 <p>The&nbsp;WebLock&nbsp;Overlay</p>
-<p>&lt;?xml&nbsp;version="1.0"?&gt;</p>
-<p>&lt;?xml-stylesheet&nbsp;href="chrome://navigator/content/weblock.css"&nbsp;type="text/css"?&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;overlay&nbsp;id="weblockOverlay"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"&gt;</p>
-<p>&nbsp;</p>
-<p>&nbsp;&nbsp;&lt;script&nbsp;type="application/javascript"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;src="chrome://weblock/content/weblock.js"/&gt;</p>
-<p>&nbsp;</p>
-<p>&nbsp;&nbsp;&lt;statusbar&nbsp;id="status-bar"&gt;</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&lt;statusbarpanel&nbsp;class="statusbarpanel-iconic"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id="weblock-status"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;insertbefore="offline-status"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oncommand="loadWebLock();"</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status="none"/&gt;</p>
-<p>&nbsp;&nbsp;&lt;/statusbar&gt;</p>
-<p>&nbsp;</p>
-<p>&lt;/overlay&gt;&nbsp;</p>
+<pre><code class="language-xml">&lt;?xml&nbsp;version="1.0"?&gt;
+&lt;?xml-stylesheet&nbsp;href="chrome://navigator/content/weblock.css"&nbsp;type="text/css"?&gt;
+
+&lt;overlay&nbsp;id="weblockOverlay"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"&gt;
+ &nbsp;&lt;script&nbsp;type="application/javascript"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;src="chrome://weblock/content/weblock.js"/&gt;
+ &nbsp;&lt;statusbar&nbsp;id="status-bar"&gt;
+ &nbsp;&nbsp;&nbsp;&lt;statusbarpanel&nbsp;class="statusbarpanel-iconic"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id="weblock-status"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;insertbefore="offline-status"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oncommand="loadWebLock();"
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status="none"/&gt;
+ &nbsp;&lt;/statusbar&gt;
+&lt;/overlay&gt; </code></pre>
 <p>&nbsp;</p>
 <p>注意，文件的根元素不是&lt;window/&gt;&nbsp;而是&lt;overlay/&gt;。在叠加机制里，XUL元素使用唯一ID来区分自己，防止和已存在的浏览器的产生冲突。&nbsp;在这个例子里，&nbsp;weblock&nbsp;&lt;statusbarpanel/&gt;&nbsp;显示为&lt;statusbar/&gt;（id为"status-bar"）元素的子元素。这个id与navigator.xul里&lt;statusbar/&gt;的id一样，这意味着新UI将会叠加在这里（例如，weblock&nbsp;statusbarpanel）并且UI已经在运行时在浏览器的&lt;statusbar/&gt;里进行定义。</p>
-<p>&nbsp;</p>
 <h1><strong>5.&nbsp;Other&nbsp;Resources</strong></h1>
 <p>这部分描述剩下的需要添加和打包到WebLock组件来提供web&nbsp;locking用户界面的文件。&nbsp;</p>
 <p>&nbsp;</p>
@@ -204,21 +191,20 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>在某些UI包中,&nbsp;本地化资源也被打包进去。&nbsp;他们包含DTDs（界面的标签被打包进此文件），如果切换为其他语言，只需要替换此文件就可以了。&nbsp;例如，用户界面包通常包含了English的DTD文件，文件里面定义了菜单，按钮，标签等在界面上显示的字符串。&nbsp;不用语言只需提供不同语言版本的DTD文件就可以了，当用户选择了不同的语言包，程序会自动使用相应语言包。&nbsp;</p>
 <h2><strong>5.1&nbsp;weblock.css</strong></h2>
 <p>下列样式表在文件weblock.css,里定义，CSS文件在应用图标叠加反射web&nbsp;lcok状态和提供访问呢web&nbsp;lock管理器对话框时被加载。</p>
-<p>&nbsp;</p>
-<p>statusbarpanel#weblock-status</p>
-<p>{</p>
-<p>&nbsp;&nbsp;list-style-image:&nbsp;url("chrome://weblock/wlock.gif");</p>
-<p>}</p>
-<p>&nbsp;</p>
-<p>statusbarpanel#weblock-status[status="locked"]</p>
-<p>{</p>
-<p>&nbsp;&nbsp;list-style-image:&nbsp;url("chrome://weblock/wl-lock.gif");</p>
-<p>}</p>
-<p>&nbsp;</p>
-<p>statusbarpanel#weblock-status[status="unlocked"]</p>
-<p>{</p>
-<p>&nbsp;&nbsp;list-style-image:&nbsp;url("chrome://weblock/wl-un.gif");</p>
-<p>}</p>
+<pre><code class="language-css">statusbarpanel#weblock-status
+{
+ &nbsp;list-style-image:&nbsp;url("chrome://weblock/wlock.gif");
+}
+
+statusbarpanel#weblock-status[status="locked"]
+{
+ &nbsp;list-style-image:&nbsp;url("chrome://weblock/wl-lock.gif");
+}
+
+statusbarpanel#weblock-status[status="unlocked"]
+{
+ &nbsp;list-style-image:&nbsp;url("chrome://weblock/wl-un.gif");
+}</code></pre>
 <p>&nbsp;</p>
 <p>样式规则由XUL里id为“weblock-status”的元素的状态决定。&nbsp;正如你在上面看到的，当状态被设置为“locked”，图片wl-lock.gif用于显示这个状态，当状态变为unlocked时，使用wl-un.gif。（注意，我们使用了三张图片来展示weblock的状态，但是wlock.gif&nbsp;和wl-lock.gif是相同的，因为weblock推定它加载时为未锁定。此教程使得使用的只有两个不同的状态，但您可以进一步定制&nbsp;weblock，如果你想使用这三个图像的外观）。&nbsp;&nbsp;</p>
 <p>演示里的&nbsp;weblock&nbsp;管理器对话框本身不需要任何特别的样式，你需要的所有规则在&nbsp;weblock.css&nbsp;中。请注意，weblock.xul&nbsp;文件，在其中定义管理器仅导入global皮肤：</p>
@@ -228,9 +214,11 @@ dateCreated: 2021-12-06T10:55:08.252Z
 <p>现在你应该已经有了本章开始的“打包清单”里的4个文件清单，他们用于WebLock&nbsp;打包(参见&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Building_the_WebLock_UI#User_Interface_Package_List">User&nbsp;Interface&nbsp;Package&nbsp;List</a>)。&nbsp;现在不用担心这些文件怎么放。下一章,&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/cn/Creating_XPCOM_Components/Packaging_WebLock">Packaging&nbsp;WebLock</a>,&nbsp;我们讨论如何打包这些文件以便&nbsp;WebLock&nbsp;组件或者别的资源利用它们。&nbsp;</p>
 <h2><strong>5.2&nbsp;Image&nbsp;Resources</strong></h2>
 <p>如果你学习本教程并且希望使用WebLock组件在statusbar中的图片，你可以从&nbsp;<a href="http://www.brownhen.com/weblock%E4%B8%8B%E8%BD%BD%E4%BB%96%E4%BB%AC%E5%92%8C%E5%85%B6%E4%BB%96">http://www.brownhen.com/weblock下载他们和其他</a>weblock相关资源.&nbsp;这些GIF文件表示的它的几种状态：&nbsp;</p>
-<p>·&nbsp;wlock.gif</p>
-<p>·&nbsp;wl-lock.gif</p>
-<p>·&nbsp;wl-un.gif</p>
+<ul>
+  <li>wlock.gif</li>
+  <li>wl-lock.gif</li>
+  <li>wl-un.gif</li>
+</ul>
 <p>Note:&nbsp;other-mozlike-browsers</p>
 <p>1&nbsp;或者你可能会很喜欢这些东西.&nbsp;还有一些基于&nbsp;Gecko的browsers&nbsp;，例如Beonex&nbsp;和&nbsp;IBM&nbsp;Web&nbsp;Browser&nbsp;也会共享很多Mozilla用户界面成分,&nbsp;你也可能装载&nbsp;WebLock&nbsp;组件和用户界面到其中。不过请注意，WebLock有可能还不能保证完全安装到Mozilla&nbsp;Firefox，因为firefox有一些新的变化&nbsp;(这本书是2003的版本).&nbsp;</p>
 <p><br>&nbsp;</p>

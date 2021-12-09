@@ -2,58 +2,109 @@
 title: 9_WebLock组件打包
 description: WebLock组件打包
 published: 1
-date: 2021-12-06T10:57:39.639Z
+date: 2021-12-09T06:47:37.056Z
 tags: xpcom
 editor: ckeditor
 dateCreated: 2021-12-06T10:57:39.639Z
 -->
 
+<p style="text-align:center;"><span class="text-big"><strong>WebLock组件打包</strong></span></p>
+<p>&nbsp;</p>
 <p>这是教程最后一部分,&nbsp;我们将把WebLock组件的所有部分（包括库文件、类型库、头文件</p>
-<p>和用户界面资源文件）打包成一个包，以便可以安装到其它应用里。&nbsp;第一节，“Component&nbsp;Installation&nbsp;Overview”，描述了Mozilla的常规安装过程。&nbsp;下一节描述WebLock组件的组织和打包步骤。</p>
-<p>请注意:&nbsp;这个教程主要是关注组件开发本身,&nbsp;所以这部分描述有关打包和安装到Gecko的过程是很简单的.&nbsp;如果你希望了解详细的打包和安装组件到基于Gecko应用的信息，应该参考<a href="http://www.mozilla.org/projects/xpinstall">http://www.mozilla.org/projects/xpinstall</a>。</p>
-<h1><strong>1.&nbsp;Component&nbsp;Installation&nbsp;Overview</strong></h1>
-<p>XPInstall是一组用来建立安装脚本的JavaScript&nbsp;APIs.&nbsp;使用XPInstall,你可以基于Gecko的应用创建基于Web的安装文件，Mozilla&nbsp;扩展，或者独立的组件。&nbsp;WebLock&nbsp;组件安装脚本也可以用来注册组件到浏览器(关注注册的更多信息，参见&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/cn/Creating_XPCOM_Components/Component_Internals#Registration_Methods_in_XPCOM">Registration&nbsp;Methods&nbsp;in&nbsp;XPCOM</a>&nbsp;)。</p>
-<p>下面的例子安装脚本使用了Mozilla&nbsp;XPInstall技术来操作安装，并且以高层次Javascript对象的方式来跟Mozilla’s&nbsp;chrome&nbsp;registry&nbsp;交互。</p>
-<h2><strong>1.1 What&nbsp;Is&nbsp;the&nbsp;Chrome&nbsp;Registry?</strong></h2>
-<p>与Windows的注册表相似，chrome注册表是也是一个数据库，它记录了Gecko应用的信息，皮肤，和其它已经安装到Gecko应用的扩展的信息。&nbsp;从Mozilla和基于Gecko的应用可以跨平台开始，这个数据库被抽象出来，独立于操作系统或者任何特定平台的注册表之上。</p>
-<p>Chrome注册表以一系列&nbsp;RDF/XML格式的文件存在，他被放在Mozilla和其它基于Gecko的浏览器的程序目录，用户配置数据，皮肤和其它应用本身相关的信息都放在那里。</p>
-<p>XPInstall中的JavaScript&nbsp;APIs&nbsp;Install&nbsp;对象下载包含了安装文件的JAR并且调用注册方法来告诉&nbsp;Mozilla&nbsp;新的组件和用来调用WebLock组件的UI。&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#WebLock_Installation_Script">WebLock&nbsp;Installation&nbsp;Script</a>&nbsp;是完整的触发式安装脚本,&nbsp;可以从网页触发。&nbsp;这些文件被存储在JAR文件：weblock.jar，这是一个简单的ZIP文件，以XPI结尾，有时候也可能包含一个内部的安装脚本：install.js。</p>
-<p>一旦你把组件和Weblock相关资源正确打包(参见章节,&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#Archiving_Resources">Archiving&nbsp;Resources</a>)，WebLock安装脚本就是一个简单的事情(see&nbsp;<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#The_WebLock_Installation_Script">The&nbsp;WebLock&nbsp;Installation&nbsp;Script</a>)。<br>&nbsp;</p>
-<h1><a href="http://blog.csdn.net/lava_sdb/article/details/8652485"><strong>xpcom 组件开发</strong></a></h1>
+<p>和用户界面资源文件）打包成一个包，以便可以安装到其它应用里。 第一节，“<a href="file:///F:/aBo/book/Creating%20XPCOM%20Components/Packaging_WebLock.htm#Component_Installation_Overview"><u>Component Installation Overview</u></a>”，描述了Mozilla的常规安装过程。 下一节描述WebLock组件的组织和打包步骤。</p>
+<p>&nbsp;</p>
+<p>请注意:&nbsp;这个教程主要是关注组件开发本身,&nbsp;所以这部分描述有关打包和安装到Gecko的过程是很简单的.&nbsp;如果你希望了解详细的打包和安装组件到基于Gecko应用的信息，应该参考<a href="http://www.mozilla.org/projects/xpinstall"><u>http://www.mozilla.org/projects/xpinstall</u></a>。</p>
+<h1>1. Component Installation Overview</h1>
+<p>XPInstall是一组用来建立安装脚本的JavaScript APIs.&nbsp;使用XPInstall,你可以基于Gecko的应用创建基于Web的安装文件，Mozilla&nbsp;扩展，或者独立的组件。 <strong>WebLock</strong>&nbsp;组件安装脚本也可以用来注册组件到浏览器(关注注册的更多信息，参见 <a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/cn/Creating_XPCOM_Components/Component_Internals#Registration_Methods_in_XPCOM"><u>Registration Methods in XPCOM</u></a> )。</p>
+<p>下面的例子安装脚本使用了Mozilla XPInstall技术来操作安装，并且以高层次Javascript对象的方式来跟Mozilla's <i>chrome registry</i>&nbsp;交互。</p>
+<p>&nbsp;</p>
+<h2><strong>What Is the Chrome Registry?</strong></h2>
+<p>&nbsp;</p>
+<p>与Windows的注册表相似，chrome注册表是也是一个数据库，它记录了Gecko应用的信息，皮肤，和其它已经安装到Gecko应用的扩展的信息。 从Mozilla和基于Gecko的应用可以跨平台开始，这个数据库被抽象出来，独立于操作系统或者任何特定平台的注册表之上。</p>
+<p>Chrome注册表以一系列 RDF/XML格式的文件存在，他被放在Mozilla和其它基于Gecko的浏览器的程序目录，用户配置数据，皮肤和其它应用本身相关的信息都放在那里。</p>
+<p>XPInstall中的JavaScript APIs Install&nbsp;对象下载包含了安装文件的JAR并且调用注册方法来告诉 Mozilla&nbsp;新的组件和用来调用<strong>WebLock</strong>组件的UI。 <a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#WebLock_Installation_Script"><u>WebLock Installation Script</u></a>&nbsp;是完整的触发式安装脚本,&nbsp;可以从网页触发。 这些文件被存储在JAR文件：weblock.jar，这是一个简单的ZIP文件，以XPI结尾，有时候也可能包含一个内部的安装脚本：install.js。</p>
+<p>&nbsp;</p>
+<p>一旦你把组件和<strong>Weblock</strong>相关资源正确打包(参见章节, <a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#Archiving_Resources"><u>Archiving Resources</u></a>)，<strong>WebLock</strong>安装脚本就是一个简单的事情(see <a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#The_WebLock_Installation_Script"><u>The WebLock Installation Script</u></a>)。</p>
+<p>&nbsp;</p>
+<h1>2. Archiving Resources</h1>
+<p>一旦你编译好了所有资源（包括建立WebLock组件的资源，建立用户界面会被添加到浏览器的文件），你就可以把他们放到叫做weblock的子路径里。</p>
+<p>&nbsp;</p>
+<p>Place the entire subdirectory into a ZIP archive and name the archive weblock.xpi. The archive, its subdirectory structure, and its contents should look like this:</p>
+<p>把整个子路径压缩成ZIP文件，命名为 weblock.xpi。 这个归档文件的目录结构如下所示：</p>
+<p>Image: weblock-zipped-package.png</p>
+<figure class="image"><img src="/pic/xpcom9-1.jpg">
+  <figcaption><strong>Archive Viewed in WinZIP</strong></figcaption>
+</figure>
+<p>&nbsp;</p>
+<p>注意，归档的顶级目录要放置下列文件，install.js文件，一个用于这个包的RDF manifest和组件文件（weblock.xpt和weblock4.dll）。 组件文件被复制到Gecko应用的组件目录，weblock子路径被复制到 chrome子目录，它的UI资源会被动态添加到基于XUL的Gecko应用程序。</p>
+<p>&nbsp;</p>
+<p>下一节描述安装的过程。</p>
+<h1>3. The WebLock Installation Script</h1>
+<p>安装脚本是一个存储在XPI中的JavaScript文件。他必须在包的根目录 (i.e., weblock.xpi) itself.&nbsp;一旦触发 (see <a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#The_WebLock_Trigger_Script"><u>The WebLock Trigger Script</u></a>)，安装脚本将：</p>
+<p>&nbsp;</p>
+<ul>
+  <li>下载WebLock组件并放到组件路径</li>
+  <li>复制weblock子路径到Mozilla chrome应用子路径</li>
+  <li>注册所有的组件和UI</li>
+</ul>
+<p>&nbsp;</p>
+<p>The XPInstall API提供了一些核心方法<a href="https://developer.mozilla.org/zh-CN/docs/Creating_XPCOM_Components/Packaging_WebLock#endnote_essential-methods"><sup><u>[essential-methods]</u></sup></a>例如 initInstall, registerChrome, addFile, and others。</p>
+<h2><strong>WebLock Installation Script</strong></h2>
+<pre><code class="language-javascript">// initialize the installation
+var err = initInstall("WebLock", "weblock", 1.0);
+
+var componentsDir = getFolder("Components");
+var cf = getFolder("Chrome");
+
+// add the DLL and say where it'll go
+addFile("weblock.dll", 1.0, "weblock.dll", componentsDir, "");
+
+// add the typelib also
+addFile("weblock.xpt", "1.0", "weblock.xpt", componentsDir, "");
+
+// add the weblock subdirectory of the XPI and specify that
+// it be installed in the chrome application directory
+err = addDirectory("weblock", "1.0", "", chromeDir, "");
+
+// ? have to register component here or with regxpcom?
+// register the new UI with the mozilla chrome registry
+registerChrome(CONTENT, getFolder(cf,"weblock.xpi"),"weblock");
+registerChrome(SKIN, getFolder(cf, "weblock.xpi"),"weblock");
+
+// perform the installation if there are no errors
+
+if (err==SUCCESS)
+  performInstall();
+else
+  cancelInstall(err);</code></pre>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
-<p>在翻译xpcom指南系列时，发现根据此系列文章来创建一个能够运行的xpcom组件有不小的难度。因为此系列文章是在2005年发表的（当时 Firefox还没有进入版本大战），虽然此系列文章后来也随着Firefox的升级持续在进行更新，但是仍然有很多地方没能改变。 当我们在阅读这系列文章时，往往很难按照文章写出可以运行的代码（甚至是能够编译通过的）。 下面把一些可能问题列在下面：</p>
-<p><strong>[ 注：</strong>本人实现了一个<a href="http://www.yutools.com/wp/tools/yuxpcomwizard/"><strong>xpcom组件向导</strong></a>，用于简化xpcom 组件的一些创建工作。]</p>
-<h1><strong>1. 组件注册</strong></h1>
-<p>组件注册的方式从Gecko 2.0就发生了变化（参见官方文章，<a href="https://developer.mozilla.org/en-US/docs/XPCOM/XPCOM_changes_in_Gecko_2.0">XPCOM changes in Gecko 2.0</a>），你再也找不到文章里提到的Regxpcom程序了，现在你不需要运行什么特别的程序来注册组件，<strong>nsModuleComponentInfo</strong>结构体也换成了<strong>nsModuleComponentInfo</strong>。 你只需要在chrome.manifest文件里加入组件的相关信息（接口，二进制库的位置）或者加入 组件的manifest文件指向，Gecko在加载的时候，会根据chrome.manifest文件自动对xpcom组件进行注册。 chrome.manifest 文件内容如下所示：</p>
-<p><strong>chrome.manifest</strong></p>
-<ol>
-  <li>content&nbsp;&nbsp;&nbsp;&nbsp;test&nbsp;&nbsp;&nbsp;&nbsp;chrome/content/</li>
-  <li>locale&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test&nbsp;&nbsp;&nbsp;&nbsp;en-US&nbsp;&nbsp;&nbsp;&nbsp;chrome/locale/en-US/</li>
-  <li>skin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;test&nbsp;&nbsp;&nbsp;&nbsp;classic/1.0&nbsp;&nbsp;&nbsp;&nbsp;chrome/skin/</li>
-  <li>manifest&nbsp;&nbsp;&nbsp;components/yuAccess.manifest</li>
-</ol>
-<p>chrome.manifest文件里的manifest行，描述了yuAccess组件的相关信息，这里是告诉Gecko，yuAccess组件的信息放置在目录components下的yuAccess.manifest文件里。</p>
-<p><strong>yuAccess.manifest</strong>文件的内容如下所示：</p>
+<h1>4. The WebLock Trigger Script</h1>
+<p>触发脚本是放在Web页面的脚本，用于初始化XPInstall的安装和调用XPI里的安装脚本。下面是一个包含了完整触发脚本的Web页面，这里触发脚本被定义成了一个JavaScript函数，installWebLock，当用户点击超链接后调用此函数。</p>
+<pre><code class="language-html">&lt;html&gt;
+&lt;title&gt;WebLock Installation&lt;/title&gt;
+&lt;script type="text/javascript"&gt;
+/*
+ * Trigger function that downloads the XPI so the
+ * install.js file inside can be read and executed
+ */
+function installWebLock()
+{
+  weblock_xpi = {'WebLock Extension': 'weblock.xpi'};
+  InstallTrigger.install(weblock_xpi);
+}
+&lt;/script&gt;
+
+&lt;h1&gt;Install WebLock&lt;/h1&gt;
+&lt;p&gt;&lt;a href="#" onclick="installWebLock();"&gt;install weblock&lt;/a&gt;&lt;/p&gt;
+&lt;/html&gt;</code></pre>
 <p>&nbsp;</p>
-<ol>
-  <li>binary-component&nbsp;yuAccess.dll</li>
-  <li>interfaces&nbsp;yuIAccess.xpt</li>
-  <li>&nbsp;</li>
-  <li>category&nbsp;profile-after-change&nbsp;yuAccess&nbsp;@yutools.com/yuIAccess;1</li>
-</ol>
-<p>chrome.manifest文件的详细格式，参见官方文档“&nbsp;</p>
-<p><a href="https://developer.mozilla.org/en-US/docs/Chrome_Registration">Chrome Registration</a></p>
-<p>”。</p>
-<h1><strong>2. 组件作为服务</strong></h1>
-<p>组件作为服务的步骤也发生了变化，变得更加简单，你只需要在组件的manifest文件里加入下面指令：</p>
+<h1>5. Distributing Your Component</h1>
+<p>一旦你正确打包好了组件和必须的安装文件和触发脚本，准备工作就完成了，你的组件可以被其它Gecko应用安装使用了。</p>
+<p>在Mozilla和Netscape浏览器里，XPInstall让基于Web的安装（通过提供XPI格式的文件和必要的安装脚本）变得特别的容易。 正如<a href="file:///F:/aBo/book/Creating%20XPCOM%20Components/Packaging_WebLock.htm#WebLock_Installation_Script"><u>WebLock Installation Script</u></a>&nbsp;举例，XPInstall&nbsp;使用特殊的关键字来引用常见的安装目录，如通用组件，跨平台的方式。</p>
+<p>如果你安装WebLock到基于Gecko的应用时，XPInstall方式不可用，你就需要单独制定一个安装计划。 我们把这作为练习交给读者完成。</p>
 <p>&nbsp;</p>
-<ol>
-  <li>category&nbsp;profile-after-change&nbsp;yuAccess&nbsp;@yutools.com/yuIAccess;1</li>
-</ol>
-<h2><strong>3. XPIDL&nbsp;Code&nbsp;Generation</strong></h2>
-<p>通过IDL生成.h和.xpt文件的程序也从可执行程序换成了python脚本。你可以在XPCOM_SDK的“\sdk\bin\”路径下找到相应的脚本，命令执行例子如下：</p>
-<ol>
-  <li>python&nbsp;%XPCOM_SDK%\sdk\bin\typelib.py&nbsp;--cachedir=./cache&nbsp;-I&nbsp;%XPCOM_SDK%\idl&nbsp;-o&nbsp;../../bin/components/yuIAccess.xpt&nbsp;yuIAccess.idl</li>
-  <li>python&nbsp;%XPCOM_SDK%\sdk\bin\header.py&nbsp;--cachedir=./cache&nbsp;-I&nbsp;%XPCOM_SDK%\idl&nbsp;-o&nbsp;../include/yuIAccess.h&nbsp;yuIAcce</li>
-</ol>
+<p><strong>Note:</strong> install-object-methods</p>
+<p>1.&nbsp;这个方法可用于主要的安装对象，在脚本里的实现方式与通过JavaScript在Web页面操作DOM实现窗口对象的方式一样。 换句话说，来自于脚本的片段initInstall等效于Install.initInstall()。</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>

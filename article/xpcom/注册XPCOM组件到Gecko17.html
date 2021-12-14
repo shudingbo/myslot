@@ -1,0 +1,34 @@
+<!--
+title: 注册XPCOM组件到Gecko17
+description: 注册XPCOM组件到Gecko17
+published: 1
+date: 2021-12-14T12:27:30.187Z
+tags: xpcom
+editor: ckeditor
+dateCreated: 2021-12-14T12:27:30.187Z
+-->
+
+<p>​</p>
+<p>&nbsp;就像在“<a href="https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/Component_Internals">Creating_XPCOM_Components</a>“描述的那样，我们可以通过三种方式把XPCOM组件注册到XPCOM系统。 但是在Gecko 17开始，有了些变化<code>(例如，regxpcom找不到了)</code>，我们需要编辑一个文件“chrome.manifests”，来显示告诉XPCOM系统要注册那个组件。 这个文件应该放在应用的根目录（与application.ini一个目录），下面是一个例子：</p>
+<p>&nbsp;</p>
+<pre><code class="language-plaintext">#chrome.manifests
+content test    chrome/content/
+locale  test    en-US   chrome/locale/en-US/
+skin    test    classic/1.0 chrome/skin/
+manifest components/samplecomp.manifest</code></pre>
+<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
+<p><br>正如上面的片段所示，第5行（manifest开始的行）表示要在XPCOM系统里注册组件的位置。 详细的细节参见 “<a href="https://developer.mozilla.org/en-US/docs/Creating_XPCOM_Components/Chrome_Registration.htm">Chrome registration</a>“。</p>
+<p>Look above snippet text, the highlight text shows the components that you want to register. Detail about chrome.manifests,see.</p>
+<p>The directory list:</p>
+<p>&nbsp;</p>
+<pre><code class="language-plaintext">test
+ + chrome
+ + components  // 下面放置了组件及组件的manifest，和xpt文件
+ + default
+ + xulrunner
+ - application.ini
+ - chrome.manifests
+ - xulrunner-stub.exe</code></pre>
+<figure class="image"><img src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw=="></figure>
+<p><br>&nbsp;</p>
+<p>​</p>

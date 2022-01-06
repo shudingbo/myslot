@@ -2,12 +2,13 @@
 title: rval lval
 description: 左值/右值引用
 published: 1
-date: 2022-01-06T09:43:32.198Z
-tags: c++, 左值引用, 右值引用
+date: 2022-01-06T09:44:20.132Z
+tags: c++, 右值引用, 左值引用
 editor: markdown
 dateCreated: 2022-01-06T09:43:32.198Z
 ---
 
+[原文](https://www.cnblogs.com/shadow-lr/p/Introduce_Std-move.html)
 # 左值和右值
 * 左值是表达式结束后依然存在的持久对象(代表一个在内存中占有确定位置的对象)
 * 右值是表达式结束时不再存在的临时对象(不在内存中占有确定位置的表达式）
